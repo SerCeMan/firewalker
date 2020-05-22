@@ -62,7 +62,17 @@ export class Firewall {
     private readonly scheme: any;
 
     constructor() {
-        const libPath = resolve('libs/libwirefilter_ffi.dylib');
+        let libPath: string;
+        switch (process.platform) {
+            case "darwin":
+                libPath = resolve('libs/libwirefilter_ffi.dylib');
+                break;
+            case "linux":
+                libPath = resolve('libs/libwirefilter_ffi.so');
+                break
+            default:
+                throw new Error(`Unsupported platform: ${process.platform}`)
+        }
         const wirefilter = initWirefilter(libPath)
         const scheme = wirefilter.wirefilter_create_scheme();
         // see https://developers.cloudflare.com/firewall/cf-firewall-language/

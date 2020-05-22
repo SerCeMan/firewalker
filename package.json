@@ -25,5 +25,9 @@
     "ref-napi": "^2.0.0",
     "ref-struct-di": "^1.1.0",
     "ref-union-di": "^1.0.1"
+  },
+  "engines": {
+    "node": ">=12.16.1 < 13",
+    "yarn": ">=1.22.4"
   }
 }
