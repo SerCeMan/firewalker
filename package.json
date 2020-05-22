@@ -1,0 +1,29 @@
+{
+  "name": "wiretest",
+  "license": "MIT",
+  "version": "0.0.1",
+  "homepage": "https://github.com/SerCeMan/firewalker",
+  "repository": "github:SerCeMan/firewalker",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/ffi-napi": "^2.4.1",
+    "@types/ip-address": "^5.8.2",
+    "@types/jest": "^25.2.3",
+    "@types/node-fetch": "^2.5.7",
+    "jest": "^26.0.1",
+    "ref-array-di": "^1.2.1",
+    "ts-jest": "^26.0.0",
+    "ts-node": "^8.10.1",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "ffi-napi": "^2.5.0",
+    "ip-address": "^6.3.0",
+    "node-fetch": "^2.6.0",
+    "ref-napi": "^2.0.0",
+    "ref-struct-di": "^1.1.0",
+    "ref-union-di": "^1.0.1"
+  }
+}

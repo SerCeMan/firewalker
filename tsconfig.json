@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "lib": [
+      "webworker"
+    ],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "removeComments": false,
+    "strict": true,
+    "target": "esnext",
+    "newLine": "LF"
+  }
+}
