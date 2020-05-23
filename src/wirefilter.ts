@@ -1,3 +1,5 @@
+/* eslint @typescript-eslint/no-explicit-any: 0 */
+
 // #ifndef _WIREFILTER_H_
 // #define _WIREFILTER_H_
 //
@@ -8,39 +10,42 @@
 // extern "C" {
 // #endif
 
-const ffi = require('ffi-napi');
-const ref = require('ref-napi');
-const Struct = require('ref-struct-di')(ref);
-const Array = require('ref-array-di')(ref)
-const Union = require('ref-union-di')(ref);
+import ffi from 'ffi-napi';
+import ref from 'ref-napi';
+import ref_struct_di from 'ref-struct-di';
+import ref_array_di from 'ref-array-di';
+import ref_union_di from 'ref-union-di';
 
+const Struct = ref_struct_di(ref);
+const Array = ref_array_di(ref as any) as any;
+const Union = ref_union_di(ref);
 
-const lib = {} as any
+const lib = {} as any;
 
 //
 // typedef struct wirefilter_scheme wirefilter_scheme_t;
 
-const wirefilter_scheme_t = Struct({})
+const wirefilter_scheme_t = Struct({});
 
 // typedef struct wirefilter_execution_context wirefilter_execution_context_t;
 
-const wirefilter_execution_context_t = Struct({})
+const wirefilter_execution_context_t = Struct({});
 
 // typedef struct wirefilter_filter_ast wirefilter_filter_ast_t;
 
-const wirefilter_filter_ast_t = Struct({})
+const wirefilter_filter_ast_t = Struct({});
 
 // typedef struct wirefilter_filter wirefilter_filter_t;
 
-const wirefilter_filter_t = Struct({})
+const wirefilter_filter_t = Struct({});
 
 // typedef struct wirefilter_map wirefilter_map_t;
 
-const wirefilter_map_t = Struct({})
+const wirefilter_map_t = Struct({});
 
 // typedef struct wirefilter_array wirefilter_array_t;
 
-const wirefilter_array_t = Struct({})
+const wirefilter_array_t = Struct({});
 
 //
 // typedef struct {
@@ -51,7 +56,7 @@ const wirefilter_array_t = Struct({})
 const wirefilter_rust_allocated_str_t = Struct({
     data: ref.types.CString,
     length: ref.types.size_t,
-})
+});
 
 //
 // typedef struct {
@@ -62,7 +67,7 @@ const wirefilter_rust_allocated_str_t = Struct({
 const wirefilter_static_rust_allocated_str_t = Struct({
     data: ref.types.CString,
     length: ref.types.size_t,
-})
+});
 
 //
 // typedef struct {
@@ -73,7 +78,7 @@ const wirefilter_static_rust_allocated_str_t = Struct({
 export const wirefilter_externally_allocated_str_t = Struct({
     data: ref.types.CString,
     length: ref.types.size_t,
-})
+});
 
 //
 // typedef struct {
@@ -84,7 +89,7 @@ export const wirefilter_externally_allocated_str_t = Struct({
 export const wirefilter_externally_allocated_byte_arr_t = Struct({
     data: ref.refType(ref.types.uchar),
     length: ref.types.size_t,
-})
+});
 
 //
 // typedef union {
@@ -103,18 +108,18 @@ const wirefilter_parsing_result_t_err = Struct({
     success: ref.types.uint8,
     _res1: ref.types.uint8,
     msg: wirefilter_rust_allocated_str_t,
-})
+});
 
 const wirefilter_parsing_result_t_ok = Struct({
     success: ref.types.uint8,
     _res2: ref.types.uint8,
     ast: ref.refType(wirefilter_filter_ast_t),
-})
+});
 
 const wirefilter_parsing_result_t = Union({
     err: wirefilter_parsing_result_t_err,
     ok: wirefilter_parsing_result_t_ok,
-})
+});
 
 // typedef union {
 //     uint8_t success;
@@ -132,18 +137,18 @@ const wirefilter_boolean_result_t_err = Struct({
     success: ref.types.uint8,
     // _res1: ref.types.uint8,
     msg: wirefilter_rust_allocated_str_t,
-})
+});
 
 const wirefilter_boolean_result_t_ok = Struct({
     success: ref.types.uint8,
     // _res2: ref.types.uint8,
     value: ref.types.bool,
-})
+});
 
 const wirefilter_boolean_result_t = Union({
     err: wirefilter_boolean_result_t_err,
     ok: wirefilter_boolean_result_t_ok
-})
+});
 
 // typedef wirefilter_boolean_result_t wirefilter_matching_result_t;
 
@@ -201,18 +206,18 @@ const wirefilter_serializing_result_t_err = Struct({
     success: ref.types.uint8,
     // _res1: ref.types.uint8,
     msg: wirefilter_rust_allocated_str_t,
-})
+});
 
 const wirefilter_serializing_result_t_ok = Struct({
     success: ref.types.uint8,
     // _res2: ref.types.uint8,
     json: wirefilter_rust_allocated_str_t,
-})
+});
 
 const wirefilter_serializing_result_t = Union({
     err: wirefilter_serializing_result_t_err,
     ok: wirefilter_serializing_result_t_ok,
-})
+});
 
 //
 // typedef union {
@@ -231,13 +236,13 @@ const wirefilter_hashing_result_t_err = Struct({
     success: ref.types.uint8,
     // _res1: ref.types.uint8,
     msg: wirefilter_rust_allocated_str_t,
-})
+});
 
 const wirefilter_hashing_result_t_ok = Struct({
     success: ref.types.uint8,
     // _res2: ref.types.uint8,
     hash: ref.types.uint64,
-})
+});
 
 const wirefilter_hashing_result_t = Union({
     err: wirefilter_hashing_result_t_err,
@@ -271,35 +276,35 @@ export enum wirefilter_type_tag_t {
 const wirefilter_type_t = Struct({
     tag: ref.types.uint8,
     data: ref.refType(ref.types.void),
-})
+});
 
 // static const wirefilter_type_t WIREFILTER_TYPE_IP = {.tag = WIREFILTER_TYPE_TAG_IP, .data = NULL};
 
 export const WIREFILTER_TYPE_IP = new wirefilter_type_t({
     tag: wirefilter_type_tag_t.WIREFILTER_TYPE_TAG_IP,
     data: null
-})
+});
 
 // static const wirefilter_type_t WIREFILTER_TYPE_BYTES = {.tag = WIREFILTER_TYPE_TAG_BYTES, .data = NULL};
 
 export const WIREFILTER_TYPE_BYTES = new wirefilter_type_t({
     tag: wirefilter_type_tag_t.WIREFILTER_TYPE_TAG_BYTES,
     data: null
-})
+});
 
 // static const wirefilter_type_t WIREFILTER_TYPE_INT = {.tag = WIREFILTER_TYPE_TAG_INT, .data = NULL};
 
 export const WIREFILTER_TYPE_INT = new wirefilter_type_t({
     tag: wirefilter_type_tag_t.WIREFILTER_TYPE_TAG_INT,
     data: null
-})
+});
 
 // static const wirefilter_type_t WIREFILTER_TYPE_BOOL = {.tag = WIREFILTER_TYPE_TAG_BOOL, .data = NULL};
 
 export const WIREFILTER_TYPE_BOOL = new wirefilter_type_t({
     tag: wirefilter_type_tag_t.WIREFILTER_TYPE_TAG_BOOL,
     data: null
-})
+});
 
 //
 // typedef enum {
@@ -307,6 +312,7 @@ export const WIREFILTER_TYPE_BOOL = new wirefilter_type_t({
 //     WIREFILTER_PANIC_CATCHER_FALLBACK_MODE_ABORT = 1,
 // } wirefilter_panic_catcher_fallback_mode_t;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 enum wirefilter_panic_catcher_fallback_mode_t {
     WIREFILTER_PANIC_CATCHER_FALLBACK_MODE_CONTINUE = 0,
     WIREFILTER_PANIC_CATCHER_FALLBACK_MODE_ABORT = 1,
@@ -315,45 +321,45 @@ enum wirefilter_panic_catcher_fallback_mode_t {
 //
 // void wirefilter_set_panic_catcher_hook();
 
-lib.wirefilter_set_panic_catcher_hook = [ref.types.void, []]
+lib.wirefilter_set_panic_catcher_hook = [ref.types.void, []];
 
 // wirefilter_boolean_result_t wirefilter_set_panic_catcher_fallback_mode(uint8_t mode);
 
 lib.wirefilter_set_panic_catcher_fallback_mode = [wirefilter_boolean_result_t, [
     ref.types.uint8
-]]
+]];
 
 // void wirefilter_enable_panic_catcher();
 
-lib.wirefilter_enable_panic_catcher = [ref.types.void, []]
+lib.wirefilter_enable_panic_catcher = [ref.types.void, []];
 
 // void wirefilter_disable_panic_catcher();
 
-lib.wirefilter_disable_panic_catcher = [ref.types.void, []]
+lib.wirefilter_disable_panic_catcher = [ref.types.void, []];
 
 //
 // wirefilter_scheme_t *wirefilter_create_scheme();
 
-lib.wirefilter_create_scheme = [ref.refType(wirefilter_scheme_t), []]
+lib.wirefilter_create_scheme = [ref.refType(wirefilter_scheme_t), []];
 
 // void wirefilter_free_scheme(wirefilter_scheme_t *scheme);
 
 lib.wirefilter_free_scheme = [ref.types.void, [
     ref.refType(wirefilter_scheme_t),
-]]
+]];
 
 // wirefilter_type_t wirefilter_create_map_type(wirefilter_type_t type);
 
 lib.wirefilter_create_map_type = [wirefilter_type_t, [
     wirefilter_type_t
-]]
+]];
 
 //
 // wirefilter_type_t wirefilter_create_array_type(wirefilter_type_t type);
 
 lib.wirefilter_create_array_type = [wirefilter_type_t, [
     wirefilter_type_t
-]]
+]];
 
 //
 // bool wirefilter_add_type_field_to_scheme(
@@ -409,20 +415,20 @@ lib.wirefilter_compile_filter = [ref.types.void, [
 
 lib.wirefilter_free_compiling_result = [ref.types.void, [
     wirefilter_compiling_result_t
-]]
+]];
 
 //
 // wirefilter_compiling_result_t wirefilter_compile_filter(wirefilter_filter_ast_t *ast);
 
 lib.wirefilter_compile_filter = [wirefilter_compiling_result_t, [
     ref.refType(wirefilter_filter_ast_t),
-]]
+]];
 
 // void wirefilter_free_compiled_filter(wirefilter_filter_t *filter);
 
 lib.wirefilter_free_compiled_filter = [ref.types.void, [
     ref.refType(wirefilter_filter_t),
-]]
+]];
 
 //
 // wirefilter_execution_context_t *wirefilter_create_execution_context(
@@ -431,7 +437,7 @@ lib.wirefilter_free_compiled_filter = [ref.types.void, [
 
 lib.wirefilter_create_execution_context = [ref.refType(wirefilter_execution_context_t), [
     ref.refType(wirefilter_scheme_t),
-]]
+]];
 
 // void wirefilter_free_execution_context(
 //     wirefilter_execution_context_t *exec_ctx
@@ -439,7 +445,7 @@ lib.wirefilter_create_execution_context = [ref.refType(wirefilter_execution_cont
 
 lib.wirefilter_free_execution_context = [ref.types.void, [
     ref.refType(wirefilter_execution_context_t),
-]]
+]];
 
 //
 // bool wirefilter_add_int_value_to_execution_context(
@@ -452,7 +458,7 @@ lib.wirefilter_add_int_value_to_execution_context = [ref.types.bool, [
     ref.refType(wirefilter_execution_context_t),
     wirefilter_externally_allocated_str_t,
     ref.types.int32,
-]]
+]];
 
 //
 // bool wirefilter_add_bytes_value_to_execution_context(
@@ -465,7 +471,7 @@ lib.wirefilter_add_bytes_value_to_execution_context = [ref.types.bool, [
     ref.refType(wirefilter_execution_context_t),
     wirefilter_externally_allocated_str_t,
     wirefilter_externally_allocated_byte_arr_t,
-]]
+]];
 
 //
 // bool wirefilter_add_ipv6_value_to_execution_context(
@@ -478,7 +484,7 @@ lib.wirefilter_add_ipv6_value_to_execution_context = [ref.types.bool, [
     ref.refType(wirefilter_execution_context_t),
     wirefilter_externally_allocated_str_t,
     Array(ref.types.uint8),
-]]
+]];
 
 //
 // bool wirefilter_add_ipv4_value_to_execution_context(
@@ -491,7 +497,7 @@ lib.wirefilter_add_ipv4_value_to_execution_context = [ref.types.bool, [
     ref.refType(wirefilter_execution_context_t),
     wirefilter_externally_allocated_str_t,
     Array(ref.types.uint8),
-]]
+]];
 
 //
 // bool wirefilter_add_bool_value_to_execution_context(
@@ -504,7 +510,7 @@ lib.wirefilter_add_bool_value_to_execution_context = [ref.types.bool, [
     ref.refType(wirefilter_execution_context_t),
     wirefilter_externally_allocated_str_t,
     ref.types.bool,
-]]
+]];
 
 // bool wirefilter_add_map_value_to_execution_context(
 //     wirefilter_execution_context_t *exec_ctx,
@@ -516,7 +522,7 @@ lib.wirefilter_add_map_value_to_execution_context = [ref.types.bool, [
     ref.refType(wirefilter_execution_context_t),
     wirefilter_externally_allocated_str_t,
     ref.refType(wirefilter_map_t),
-]]
+]];
 
 //
 // bool wirefilter_add_array_value_to_execution_context(
@@ -529,14 +535,14 @@ lib.wirefilter_add_array_value_to_execution_context = [ref.types.bool, [
     ref.refType(wirefilter_execution_context_t),
     wirefilter_externally_allocated_str_t,
     ref.refType(wirefilter_array_t),
-]]
+]];
 
 //
 // wirefilter_map_t *wirefilter_create_map(wirefilter_type_t type);
 
 lib.wirefilter_create_map = [ref.refType(wirefilter_map_t), [
     wirefilter_type_t
-]]
+]];
 
 //
 // bool wirefilter_add_int_value_to_map(
@@ -549,7 +555,7 @@ lib.wirefilter_add_int_value_to_map = [ref.types.bool, [
     ref.refType(wirefilter_map_t),
     wirefilter_externally_allocated_str_t,
     ref.types.int32,
-]]
+]];
 
 //
 // bool wirefilter_add_bytes_value_to_map(
@@ -562,7 +568,7 @@ lib.wirefilter_add_bytes_value_to_map = [ref.types.bool, [
     ref.refType(wirefilter_map_t),
     wirefilter_externally_allocated_str_t,
     wirefilter_externally_allocated_byte_arr_t,
-]]
+]];
 
 //
 // bool wirefilter_add_ipv6_value_to_map(
@@ -575,7 +581,7 @@ lib.wirefilter_add_ipv6_value_to_map = [ref.types.bool, [
     ref.refType(wirefilter_map_t),
     wirefilter_externally_allocated_str_t,
     Array(ref.types.uint8),
-]]
+]];
 
 //
 // bool wirefilter_add_ipv4_value_to_map(
@@ -588,7 +594,7 @@ lib.wirefilter_add_ipv4_value_to_map = [ref.types.bool, [
     ref.refType(wirefilter_map_t),
     wirefilter_externally_allocated_str_t,
     Array(ref.types.uint8),
-]]
+]];
 
 //
 // bool wirefilter_add_bool_value_to_map(
@@ -601,7 +607,7 @@ lib.wirefilter_add_bool_value_to_map = [ref.types.bool, [
     ref.refType(wirefilter_map_t),
     wirefilter_externally_allocated_str_t,
     ref.types.bool,
-]]
+]];
 
 //
 // bool wirefilter_add_map_value_to_map(
@@ -614,7 +620,7 @@ lib.wirefilter_add_map_value_to_map = [ref.types.bool, [
     ref.refType(wirefilter_map_t),
     wirefilter_externally_allocated_str_t,
     ref.refType(wirefilter_map_t),
-]]
+]];
 
 //
 // bool wirefilter_add_array_value_to_map(
@@ -627,21 +633,21 @@ lib.wirefilter_add_array_value_to_map = [ref.types.bool, [
     ref.refType(wirefilter_map_t),
     wirefilter_externally_allocated_str_t,
     ref.refType(wirefilter_array_t),
-]]
+]];
 
 //
 // void wirefilter_free_map(wirefilter_map_t *map);
 
 lib.wirefilter_free_map = [ref.types.void, [
     ref.refType(wirefilter_map_t)
-]]
+]];
 
 //
 // wirefilter_array_t *wirefilter_create_array(wirefilter_type_t type);
 
 lib.wirefilter_create_array = [ref.refType(wirefilter_array_t), [
     ref.refType(wirefilter_type_t)
-]]
+]];
 
 //
 // bool wirefilter_add_int_value_to_array(
@@ -654,7 +660,7 @@ lib.wirefilter_add_int_value_to_array = [ref.types.bool, [
     ref.refType(wirefilter_array_t),
     ref.types.uint32,
     ref.types.int32,
-]]
+]];
 
 //
 // bool wirefilter_add_bytes_value_to_array(
@@ -667,7 +673,7 @@ lib.wirefilter_add_bytes_value_to_array = [ref.types.bool, [
     ref.refType(wirefilter_array_t),
     ref.types.uint32,
     wirefilter_externally_allocated_byte_arr_t,
-]]
+]];
 
 //
 // bool wirefilter_add_ipv6_value_to_array(
@@ -680,7 +686,7 @@ lib.wirefilter_add_ipv6_value_to_array = [ref.types.bool, [
     ref.refType(wirefilter_array_t),
     ref.types.uint32,
     Array(ref.types.uint8),
-]]
+]];
 
 //
 // bool wirefilter_add_ipv4_value_to_array(
@@ -693,7 +699,7 @@ lib.wirefilter_add_ipv4_value_to_array = [ref.types.bool, [
     ref.refType(wirefilter_array_t),
     ref.types.uint32,
     Array(ref.types.uint8),
-]]
+]];
 
 //
 // bool wirefilter_add_bool_value_to_array(
@@ -706,7 +712,7 @@ lib.wirefilter_add_ipv4_value_to_array = [ref.types.bool, [
     ref.refType(wirefilter_array_t),
     ref.types.uint32,
     ref.types.bool,
-]]
+]];
 
 //
 // bool wirefilter_add_map_value_to_array(
@@ -748,7 +754,7 @@ lib.wirefilter_free_array = [ref.types.void, [ref.refType(wirefilter_array_t)]];
 lib.wirefilter_match = [wirefilter_matching_result_t, [
     ref.refType(wirefilter_filter_t),
     ref.refType(wirefilter_execution_context_t),
-]]
+]];
 
 // void wirefilter_free_matching_result(wirefilter_matching_result_t result);
 
@@ -763,7 +769,7 @@ lib.wirefilter_free_matching_result = [ref.types.void, [wirefilter_matching_resu
 lib.wirefilter_filter_uses = [wirefilter_using_result_t, [
     ref.refType(wirefilter_filter_ast_t),
     wirefilter_externally_allocated_str_t,
-]]
+]];
 
 // wirefilter_using_result_t wirefilter_filter_uses_list(
 //     const wirefilter_filter_ast_t *ast,
@@ -773,7 +779,7 @@ lib.wirefilter_filter_uses = [wirefilter_using_result_t, [
 lib.wirefilter_filter_uses_list = [wirefilter_using_result_t, [
     ref.refType(wirefilter_filter_ast_t),
     wirefilter_externally_allocated_str_t,
-]]
+]];
 
 // wirefilter_hashing_result_t wirefilter_get_filter_hash(const wirefilter_filter_ast_t *ast);
 
@@ -785,7 +791,7 @@ lib.wirefilter_get_filter_hash = [wirefilter_hashing_result_t, [
 
 lib.wirefilter_free_hashing_result = [ref.types.void, [
     wirefilter_hashing_result_t
-]]
+]];
 
 //
 // wirefilter_serializing_result_t wirefilter_serialize_filter_to_json(
@@ -794,7 +800,7 @@ lib.wirefilter_free_hashing_result = [ref.types.void, [
 
 lib.wirefilter_serialize_filter_to_json = [wirefilter_serializing_result_t, [
     ref.refType(wirefilter_filter_ast_t),
-]]
+]];
 
 // wirefilter_serializing_result_t wirefilter_serialize_scheme_to_json(
 //     const wirefilter_scheme_t *scheme
@@ -827,19 +833,19 @@ lib.wirefilter_serialize_execution_context_to_json = [wirefilter_serializing_res
 
 lib.wirefilter_free_serializing_result = [ref.types.void, [
     wirefilter_serializing_result_t
-]]
+]];
 
 //
 // void wirefilter_free_string(wirefilter_rust_allocated_str_t str);
 
 lib.wirefilter_free_string = [ref.types.void, [
     wirefilter_rust_allocated_str_t,
-]]
+]];
 
 //
 // wirefilter_static_rust_allocated_str_t wirefilter_get_version();
 
-lib.wirefilter_get_version = [wirefilter_static_rust_allocated_str_t, []]
+lib.wirefilter_get_version = [wirefilter_static_rust_allocated_str_t, []];
 
 //
 // #ifdef __cplusplus
