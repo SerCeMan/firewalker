@@ -11,9 +11,10 @@
     "lib/"
   ],
   "scripts": {
-    "build": "rm -r dist/ && tsc",
+    "build": "rm -rf dist/ && tsc",
     "test": "jest",
-    "lint": "eslint src/* test/*"
+    "lint": "eslint src/* test/*",
+    "prepublishOnly": "yarn build && yarn lint && yarn test"
   },
   "devDependencies": {
     "@types/ffi-napi": "^2.4.2",
