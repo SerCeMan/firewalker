@@ -271,7 +271,7 @@ describe('Firewall rule', () => {
         `);
         // TODO: support transformation functions
         // const rule = firewall.createFirewallRule(`
-        //     http.request.uri.args["search"][0] == "red+apples"
+        //     any(http.request.uri.args["search"][*] == "red+apples")
         // `);
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
@@ -283,12 +283,56 @@ describe('Firewall rule', () => {
         const rule = firewall.createFirewallRule(`
             http.request.uri.args.values[0] == "red+apples"
         `);
-        // TODO: support transformation functions
-        // const rule = firewall.createFirewallRule(`
-        //     http.request.uri.args["search"][0] == "red+apples"
-        // `);
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org?search=red+apples'))).toBeTruthy();
+    });
+
+    it('should match the HTTP request headers represented in a map', () => {
+        const firewall = new Firewall();
+        const rule = firewall.createFirewallRule(`
+            http.request.headers["content-type"][0] == "application/json"
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            headers: [['Content-Type', 'application/json']]
+        }))).toBeTruthy();
+    });
+
+    it('should match the values of headers in the HTTP request', () => {
+        const firewall = new Firewall();
+        const rule = firewall.createFirewallRule(`
+            http.request.headers.values[0] == "application/json"
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            headers: [['Content-Type', 'application/json']]
+        }))).toBeTruthy();
+    });
+
+    it('should match the names of headers in the HTTP request', () => {
+        const firewall = new Firewall();
+        const rule = firewall.createFirewallRule(`
+            http.request.headers.names[0] == "content-type"
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            headers: [['Content-Type', 'application/json']]
+        }))).toBeTruthy();
+    });
+
+    it('should match when HTTP request contained too many headers', () => {
+        const firewall = new Firewall();
+        const rule = firewall.createFirewallRule(`
+            http.request.headers.truncated
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            headers: [['x-http.request.headers.truncated', 'true']]
+        }))).toBeTruthy();
     });
 });

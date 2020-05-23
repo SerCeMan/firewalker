@@ -2,6 +2,7 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "lib": [
+      "es2018",
       "webworker"
     ],
     "module": "commonjs",

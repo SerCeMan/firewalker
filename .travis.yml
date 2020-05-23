@@ -17,6 +17,4 @@ before_install:
   - export PATH="$HOME/.yarn/bin:$PATH"
 
 script:
-  - yarn lint
-  - yarn build
-  - yarn test
+  - yarn validate

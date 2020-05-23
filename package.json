@@ -14,7 +14,8 @@
     "build": "rm -rf dist/ && tsc",
     "test": "jest",
     "lint": "eslint src/* test/*",
-    "prepublishOnly": "yarn build && yarn lint && yarn test"
+    "validate": "yarn lint && yarn build && yarn test",
+    "prepublishOnly": "yarn validate"
   },
   "devDependencies": {
     "@types/ffi-napi": "^2.4.2",
