@@ -175,6 +175,8 @@ export class Firewall {
         }
         const wirefilter = initWirefilter(libPath);
         const scheme = wirefilter.wirefilter_create_scheme();
+        // add tranformation functions
+        wirefilter.add_standard_functions(scheme);
         // see https://developers.cloudflare.com/firewall/cf-firewall-language/
         // Standard fields
         addString(wirefilter, scheme, 'http.cookie');

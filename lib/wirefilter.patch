@@ -1,0 +1,323 @@
+Index: ffi/Cargo.toml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- ffi/Cargo.toml	(revision 92274349dcf750ba10047c771521a7b78300a1b2)
++++ ffi/Cargo.toml	(date 1590239540715)
+@@ -21,6 +21,7 @@
+ serde_json = "1.0.27"
+ num_enum = "0.4"
+ backtrace = "0.3"
++percent-encoding = "2.1.0"
+
+ [dependencies.wirefilter-engine]
+ path = "../engine"
+Index: Cargo.lock
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Cargo.lock	(revision 92274349dcf750ba10047c771521a7b78300a1b2)
++++ Cargo.lock	(date 1590239541094)
+@@ -397,6 +397,11 @@
+  "syn 0.15.44 (registry+https://github.com/rust-lang/crates.io-index)",
+ ]
+
++[[package]]
++name = "percent-encoding"
++version = "2.1.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++
+ [[package]]
+ name = "proc-macro-crate"
+ version = "0.1.4"
+@@ -876,6 +881,7 @@
+  "indoc 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+  "libc 0.2.42 (registry+https://github.com/rust-lang/crates.io-index)",
+  "num_enum 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
++ "percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+  "regex 1.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+  "serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
+  "wirefilter-engine 0.7.0",
+@@ -951,6 +957,7 @@
+ "checksum num_cpus 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c51a3322e4bca9d212ad9a158a02abc6934d005490c054a2778df73a70aa0a30"
+ "checksum num_enum 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "47c0ae6c262e0c0adb0ffe6b30bf4025aca4983009d6027b377d13a14aa149a2"
+ "checksum num_enum_derive 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "47b3a6cd5b8ac2ca83258cbaf693f740aca5681818b4720497305fd642447eb0"
++"checksum percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
+ "checksum proc-macro-crate 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "e10d4b51f154c8a7fb96fd6dad097cb74b863943ec010ac94b9fd1be8861fe1e"
+ "checksum proc-macro-hack 0.5.9 (registry+https://github.com/rust-lang/crates.io-index)" = "e688f31d92ffd7c1ddc57a1b4e6d773c0f2a14ee437a4b0a4f5a69c80eb221c8"
+ "checksum proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)" = "cf3d2011ab5c909338f7887f4fc896d35932e29146c12c8d01da6b22a80ba759"
+Index: engine/src/lib.rs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- engine/src/lib.rs	(revision 92274349dcf750ba10047c771521a7b78300a1b2)
++++ engine/src/lib.rs	(date 1590229912294)
+@@ -73,7 +73,7 @@
+ mod range_set;
+ mod rhs_types;
+ mod strict_partial_ord;
+-mod types;
++pub mod types;
+
+ pub use self::{
+     ast::{
+Index: ffi/src/lib.rs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- ffi/src/lib.rs	(revision 92274349dcf750ba10047c771521a7b78300a1b2)
++++ ffi/src/lib.rs	(date 1590243881460)
+@@ -16,10 +16,7 @@
+     io::{self, Write},
+     net::IpAddr,
+ };
+-use wirefilter::{
+-    Array, DefaultCompiler, ExecutionContext, FieldIndex, Filter, FilterAst, LhsValue, Map,
+-    ParseError, Scheme, Type,
+-};
++use wirefilter::{Array, DefaultCompiler, ExecutionContext, FieldIndex, Filter, FilterAst, LhsValue, Map, ParseError, Scheme, Type, SimpleFunctionDefinition, FunctionArgKind, SimpleFunctionImpl, SimpleFunctionOptParam, SimpleFunctionParam, FunctionArgs};
+
+ const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+@@ -131,6 +128,160 @@
+
+ type HashingResult = CResult<u64>;
+
++use wirefilter::types::GetType;
++use crate::transfer_types::raw_ptr_repr::ExternPtrRepr;
++
++fn len_function<'a>(args: FunctionArgs<'_, 'a>) -> Option<LhsValue<'a>> {
++    match args.next()? {
++        Ok(LhsValue::Bytes(bytes)) => Some(LhsValue::Int(i32::try_from(bytes.len()).unwrap())),
++        Err(Type::Bytes) => None,
++        _ => unreachable!(),
++    }
++}
++
++fn any_function<'a>(args: FunctionArgs<'_, 'a>) -> Option<LhsValue<'a>> {
++    match args.next()? {
++        Ok(v) => Some(LhsValue::Bool(
++            Array::try_from(v)
++                .unwrap()
++                .into_iter()
++                .any(|lhs| bool::try_from(lhs).unwrap()),
++        )),
++        Err(Type::Array(ref arr)) if arr.get_type() == Type::Bool => None,
++        _ => unreachable!(),
++    }
++}
++
++fn all_function<'a>(args: FunctionArgs<'_, 'a>) -> Option<LhsValue<'a>> {
++    match args.next()? {
++        Ok(v) => Some(LhsValue::Bool(
++            Array::try_from(v)
++                .unwrap()
++                .into_iter()
++                .all(|lhs| bool::try_from(lhs).unwrap()),
++        )),
++        Err(Type::Array(ref arr)) if arr.get_type() == Type::Bool => None,
++        _ => unreachable!(),
++    }
++}
++
++fn lower_function<'a>(args: FunctionArgs<'_, 'a>) -> Option<LhsValue<'a>> {
++    let input = args.next()?.ok()?;
++    match input {
++        LhsValue::Bytes(bytes) => Some(LhsValue::Bytes(bytes.to_ascii_lowercase().into())),
++        _ => panic!("Invalid type: expected Bytes, got {:?}", input),
++    }
++}
++
++fn upper_function<'a>(args: FunctionArgs<'_, 'a>) -> Option<LhsValue<'a>> {
++    let input = args.next()?.ok()?;
++    match input {
++        LhsValue::Bytes(bytes) => Some(LhsValue::Bytes(bytes.to_ascii_uppercase().into())),
++        _ => panic!("Invalid type: expected Bytes, got {:?}", input),
++    }
++}
++
++use percent_encoding::percent_decode;
++
++fn url_decode<'a>(args: FunctionArgs<'_, 'a>) -> Option<LhsValue<'a>> {
++    let input = args.next()?.ok()?;
++    let res = match input {
++        LhsValue::Bytes(bytes) => Some(LhsValue::Bytes(percent_decode(&bytes).collect())),
++        _ => panic!("Invalid type: expected Bytes, got {:?}", input),
++    };
++    return res;
++}
++
++#[no_mangle]
++pub extern "C" fn add_standard_functions(
++    scheme: &mut Scheme,
++) {
++    scheme
++        .add_function(
++            "any".into(),
++            SimpleFunctionDefinition {
++                params: vec![SimpleFunctionParam {
++                    arg_kind: FunctionArgKind::Field,
++                    val_type: Type::Array(Box::new(Type::Bool)),
++                }],
++                opt_params: vec![],
++                return_type: Type::Bool,
++                implementation: SimpleFunctionImpl::new(any_function),
++            },
++        )
++        .unwrap();
++    scheme
++        .add_function(
++            "all".into(),
++            SimpleFunctionDefinition {
++                params: vec![SimpleFunctionParam {
++                    arg_kind: FunctionArgKind::Field,
++                    val_type: Type::Array(Box::new(Type::Bool)),
++                }],
++                opt_params: vec![],
++                return_type: Type::Bool,
++                implementation: SimpleFunctionImpl::new(all_function),
++            },
++        )
++        .unwrap();
++    scheme
++        .add_function(
++            "lower".into(),
++            SimpleFunctionDefinition {
++                params: vec![SimpleFunctionParam {
++                    arg_kind: FunctionArgKind::Field,
++                    val_type: Type::Bytes,
++                }],
++                opt_params: vec![],
++                return_type: Type::Bytes,
++                implementation: SimpleFunctionImpl::new(lower_function),
++            },
++        )
++        .unwrap();
++    scheme
++        .add_function(
++            "upper".into(),
++            SimpleFunctionDefinition {
++                params: vec![SimpleFunctionParam {
++                    arg_kind: FunctionArgKind::Field,
++                    val_type: Type::Bytes,
++                }],
++                opt_params: vec![],
++                return_type: Type::Bytes,
++                implementation: SimpleFunctionImpl::new(upper_function),
++            },
++        )
++        .unwrap();
++    scheme
++        .add_function(
++            "len".into(),
++            SimpleFunctionDefinition {
++                params: vec![SimpleFunctionParam {
++                    arg_kind: FunctionArgKind::Field,
++                    val_type: Type::Bytes,
++                }],
++                opt_params: vec![],
++                return_type: Type::Int,
++                implementation: SimpleFunctionImpl::new(len_function),
++            },
++        )
++        .unwrap();
++    scheme
++        .add_function(
++            "url_decode".into(),
++            SimpleFunctionDefinition {
++                params: vec![SimpleFunctionParam {
++                    arg_kind: FunctionArgKind::Field,
++                    val_type: Type::Bytes,
++                }],
++                opt_params: vec![],
++                return_type: Type::Bytes,
++                implementation: SimpleFunctionImpl::new(url_decode),
++            },
++        )
++        .unwrap();
++}
++
+ #[no_mangle]
+ pub extern "C" fn wirefilter_create_scheme() -> RustBox<Scheme> {
+     Default::default()
+@@ -296,7 +447,7 @@
+                 "{} while serializing execution context {:#?}",
+                 err, exec_context
+             )
+-            .into(),
++                .into(),
+         ),
+     }
+ }
+@@ -657,8 +808,9 @@
+
+ #[cfg(test)]
+ mod ffi_test {
++    use regex::Regex;
++
+     use super::*;
+-    use regex::Regex;
+
+     fn create_scheme() -> RustBox<Scheme> {
+         let mut scheme = wirefilter_create_scheme();
+@@ -894,19 +1046,19 @@
+             assert!(match_filter(
+                 r#"num1 > 41 && num2 == 1337 && ip1 != 192.168.0.1 && str2 ~ "yo\d+" && map2["key"] == "value""#,
+                 &scheme,
+-                &exec_context
++                &exec_context,
+             ));
+
+             assert!(match_filter(
+                 r#"ip2 == 0:0:0:0:0:ffff:c0a8:1 && (str1 == "Hey" || str2 == "ya") && (map1["key"] == 42 || map2["key2"] == "value")"#,
+                 &scheme,
+-                &exec_context
++                &exec_context,
+             ));
+
+             assert!(!match_filter(
+                 "ip1 == 127.0.0.1 && ip2 == 0:0:0:0:0:ffff:c0a8:2",
+                 &scheme,
+-                &exec_context
++                &exec_context,
+             ));
+
+             wirefilter_free_execution_context(exec_context);
+@@ -924,13 +1076,13 @@
+                 &scheme,
+                 r#"num1 > 41 && num2 == 1337 && ip1 != 192.168.0.1 && str2 ~ "yo\d+" && map1["key"] == 42"#,
+             )
+-            .unwrap();
++                .unwrap();
+
+             let filter2 = parse_filter(
+                 &scheme,
+                 r#"num1 >     41 && num2 == 1337 &&    ip1 != 192.168.0.1 and str2 ~ "yo\d+"    && map1["key"] == 42   "#,
+             )
+-            .unwrap();
++                .unwrap();
+
+             let filter3 = parse_filter(&scheme, r#"num1 > 41 && num2 == 1337"#).unwrap();
+
+@@ -966,7 +1118,7 @@
+                 &scheme,
+                 r#"num1 > 41 && num2 == 1337 && ip1 != 192.168.0.1 && str2 ~ "yo\d+" && map1["key"] == 42"#,
+             )
+-            .unwrap();
++                .unwrap();
+
+             assert!(wirefilter_filter_uses(&filter, ExternallyAllocatedStr::from("num1")).unwrap());
+
+@@ -1001,7 +1153,7 @@
+                 &scheme,
+                 r#"num1 in $numbers && num2 == 1337 && str1 in $countries && str2 != "hi" && ip1 in $bad && ip2 == 10.10.10.10"#,
+             )
+-            .unwrap();
++                .unwrap();
+
+             assert!(
+                 wirefilter_filter_uses_list(&filter, ExternallyAllocatedStr::from("num1")).unwrap()

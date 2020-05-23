@@ -854,6 +854,14 @@ lib.wirefilter_get_version = [wirefilter_static_rust_allocated_str_t, []];
 //
 // #endif // _WIREFILTER_H_
 
+// patch started
+
+lib.add_standard_functions = [ref.types.void, [
+    ref.refType(wirefilter_scheme_t)
+]];
+
+// patch ended
+
 export function initWirefilter(path: string): any {
     return ffi.Library(path, lib);
 }
