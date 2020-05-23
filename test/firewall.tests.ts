@@ -1,11 +1,16 @@
 import {Firewall, Request} from '../src';
 import {URLSearchParams} from 'url';
 
-describe('Firewall rule', () => {
-    // see https://developers.cloudflare.com/firewall/cf-firewall-language/
+// see https://developers.cloudflare.com/firewall/cf-firewall-language/
+
+describe('Standard fields', () => {
+    let firewall: Firewall;
+
+    beforeEach(() => {
+        firewall = new Firewall();
+    });
 
     it('should match the entire cookie as a string', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.cookie != "gingersnaps"
         `);
@@ -20,7 +25,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the host name used in the full request URI', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.host eq "www.example.org"
         `);
@@ -31,7 +35,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the HTTP Referer header', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.referer eq "https://developer.example.org/en-US"
         `);
@@ -46,7 +49,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the full URI', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.full_uri == "https://www.example.org/articles/index?section=539061&expand=comments"
         `);
@@ -58,7 +60,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the HTTP method, in uppercase', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.method eq "GET"
         `);
@@ -70,7 +71,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the absolute URI of the request', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.uri == "/articles/index?section=539061&expand=comments"
         `);
@@ -82,7 +82,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the path of the request', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.uri.path == "/articles/index"
         `);
@@ -94,7 +93,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the whole query string, minus the ? delimiter', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.uri.query == "section=539061&expand=comments"
         `);
@@ -106,7 +104,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the HTTP user agent', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.user_agent == "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
         `);
@@ -121,7 +118,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the version of the protocol used for the request', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.version == 1
         `);
@@ -133,7 +129,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the full X-Forwarded-For HTTP header', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.x_forwarded_for == "203.0.113.195, 70.41.3.18"
         `);
@@ -145,7 +140,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the client TCP IP address', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             ip.src == 93.184.216.34 or
             ip.src == 2001:0db8:85a3:0000:0000:8a2e:0370:7334
@@ -167,7 +161,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the 16- or 32-bit ASN associated with the request', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             ip.geoip.asnum == 1234
         `);
@@ -179,7 +172,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the continent code for this location Possible codes', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             ip.geoip.continent == "EU"
         `);
@@ -191,7 +183,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the 2-letter country code in ISO 3166-1 Alpha 2 format', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             ip.geoip.country == "RU"
         `);
@@ -203,7 +194,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the ISO 3166-2 code for the first level region associated with the IP address.', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             ip.geoip.subdivision_1_iso_code == "GB-ENG"
         `);
@@ -215,7 +205,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the ISO 3166-2 code for the second level region associated with the IP address.', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             ip.geoip.subdivision_2_iso_code == "GB-SWK"
         `);
@@ -227,7 +216,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match when the request originates from an EU country', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             ip.geoip.is_in_european_union
         `);
@@ -239,7 +227,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match when the HTTP connection to the client is encrypted', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             ssl
         `);
@@ -247,9 +234,16 @@ describe('Firewall rule', () => {
         expect(rule.match(new Request('http://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org'))).toBeTruthy();
     });
+});
+
+describe('Argument and value fields for URIs', () => {
+    let firewall: Firewall;
+
+    beforeEach(() => {
+        firewall = new Firewall();
+    });
 
     it('should match the HTTP URI arguments represented in a map', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.uri.args["search"][0] == "red+apples" or
             http.request.uri.args["search"][1] == "red+apples"
@@ -266,7 +260,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the names of arguments in the HTTP URI query string', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.uri.args.names[0] == "search"
         `);
@@ -280,7 +273,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the values of arguments in the HTTP URI query string', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.uri.args.values[0] == "red+apples"
         `);
@@ -288,9 +280,16 @@ describe('Firewall rule', () => {
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org?search=red+apples'))).toBeTruthy();
     });
+});
+
+describe('Header fields', () => {
+    let firewall: Firewall;
+
+    beforeEach(() => {
+        firewall = new Firewall();
+    });
 
     it('should match the HTTP request headers represented in a map', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.headers["content-type"][0] == "application/json"
         `);
@@ -302,7 +301,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the values of headers in the HTTP request', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.headers.values[0] == "application/json"
         `);
@@ -314,7 +312,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match the names of headers in the HTTP request', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.headers.names[0] == "content-type"
         `);
@@ -326,7 +323,6 @@ describe('Firewall rule', () => {
     });
 
     it('should match when HTTP request contained too many headers', () => {
-        const firewall = new Firewall();
         const rule = firewall.createFirewallRule(`
             http.request.headers.truncated
         `);
