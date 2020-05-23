@@ -9,7 +9,7 @@ import {
 } from "./wirefilter";
 import {Request} from "node-fetch";
 import {Address4, Address6} from "ip-address";
-import {resolve} from "path";
+import * as path from "path";
 
 function wirefilterString(s: string) {
     let str = new wirefilter_externally_allocated_str_t();
@@ -65,10 +65,10 @@ export class Firewall {
         let libPath: string;
         switch (process.platform) {
             case "darwin":
-                libPath = resolve('lib/libwirefilter_ffi.dylib');
+                libPath = path.join(__dirname, '..', 'lib', 'libwirefilter_ffi.dylib');
                 break;
             case "linux":
-                libPath = resolve('lib/libwirefilter_ffi.so');
+                libPath = path.join(__dirname, '..', 'lib', 'libwirefilter_ffi.so');
                 break
             default:
                 throw new Error(`Unsupported platform: ${process.platform}`)
