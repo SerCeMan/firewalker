@@ -92,7 +92,10 @@ function paramsToMap(params: string): Map<string, string[]> {
         return new Map<string, string[]>();
     }
     const map = new Map<string, string[]>();
-    params.substring(1).split('&')
+    if (params[0] == '?') {
+        params = params.substring(1);
+    }
+    params.split('&')
         .map(v => v.split('='))
         .forEach(pair => {
             const [key, val] = pair;
@@ -184,7 +187,11 @@ export class Firewall {
         addStrArray(wirefilter, scheme, 'http.request.headers.values');
         addBoolen(wirefilter, scheme, 'http.request.headers.truncated');
         // Body fields
-        // ...
+        addString(wirefilter, scheme, 'http.request.body.raw');
+        addBoolen(wirefilter, scheme, 'http.request.body.truncated');
+        addMapToStrArray(wirefilter, scheme, 'http.request.body.form');
+        addStrArray(wirefilter, scheme, 'http.request.body.form.names');
+        addStrArray(wirefilter, scheme, 'http.request.body.form.values');
         // Dynamic fields
         addBoolen(wirefilter, scheme, 'cf.bot_management.verified_bot');
         addNumber(wirefilter, scheme, 'cf.threat_score');
@@ -258,6 +265,18 @@ export class FirewallRule {
         this.addStrArrayCtx(exec_ctx, 'http.request.headers.names', [...req.headers.keys()]);
         this.addStrArrayCtx(exec_ctx, 'http.request.headers.values', ([] as string[]).concat(...req.headers.values()));
         this.addBoolenToCtx(exec_ctx, 'http.request.headers.truncated', (req.headers.get('x-http.request.headers.truncated') || '').toLowerCase() === 'true');
+        // Body fields
+        this.addStringToCtx(exec_ctx, 'http.request.body.raw', String(req.body || ''));
+        this.addBoolenToCtx(exec_ctx, 'http.request.body.truncated', (req.headers.get('x-http.request.body.truncated') || '').toLowerCase() === 'true');
+        let bodyParams: Map<string, string[]>;
+        if ((req.headers.get('Content-Type') || '').startsWith('application/x-www-form-urlencoded')) {
+            bodyParams = paramsToMap(String(req.body || ''));
+        } else {
+            bodyParams = new Map<string, string[]>();
+        }
+        this.addMapStrToCtx(exec_ctx, 'http.request.body.form', bodyParams);
+        this.addStrArrayCtx(exec_ctx, 'http.request.body.form.names', [...bodyParams.keys()]);
+        this.addStrArrayCtx(exec_ctx, 'http.request.body.form.values', ([] as string[]).concat(...bodyParams.values()));
         try {
             const matchResult = wirefilter.wirefilter_match(this.filter, exec_ctx);
             if (matchResult.ok.success != 1) {

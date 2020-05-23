@@ -1,4 +1,5 @@
 import {Firewall, Request} from '../src';
+import {URLSearchParams} from 'url';
 
 describe('Firewall rule', () => {
     // see https://developers.cloudflare.com/firewall/cf-firewall-language/
@@ -333,6 +334,76 @@ describe('Firewall rule', () => {
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
             headers: [['x-http.request.headers.truncated', 'true']]
+        }))).toBeTruthy();
+    });
+});
+
+describe('Body fields', () => {
+    let firewall: Firewall;
+
+    beforeEach(() => {
+        firewall = new Firewall();
+    });
+
+    it('should match the string representing the unaltered HTTP request body', () => {
+        const rule = firewall.createFirewallRule(`
+            http.request.body.raw == "{\\"example\\":\\"payload\\"}"
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            method: 'POST',
+            body: JSON.stringify({'example': 'payload'})
+        }))).toBeTruthy();
+    });
+
+    it('should match if the HTTP request body was too long', () => {
+        const rule = firewall.createFirewallRule(`
+            http.request.body.truncated
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            headers: [['x-http.request.body.truncated', 'true']]
+        }))).toBeTruthy();
+    });
+
+    it('should match HTTP body represented in a map (application/x-www-form-urlencoded)', () => {
+        const rule = firewall.createFirewallRule(`
+            http.request.body.form["username"][0] == "admin"
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            body: new URLSearchParams('email=test@example.com&username=admin'),
+            method: 'POST'
+        }))).toBeTruthy();
+    });
+
+    it('should match the names of form fields in the HTTP request', () => {
+        const rule = firewall.createFirewallRule(`
+            http.request.body.form.names[0] == "email" and 
+            http.request.body.form.names[1] == "username"
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            body: new URLSearchParams('email=test@example.com&username=admin'),
+            method: 'POST'
+        }))).toBeTruthy();
+    });
+
+
+    it('should match the values of form fields in the HTTP request', () => {
+        const rule = firewall.createFirewallRule(`
+            http.request.body.form.values[0] == "test%40example.com" and
+            http.request.body.form.values[1] == "admin"
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            body: new URLSearchParams('email=test@example.com&username=admin'),
+            method: 'POST'
         }))).toBeTruthy();
     });
 });
