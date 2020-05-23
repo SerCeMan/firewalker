@@ -85,6 +85,25 @@ function addBoolen(wirefilter: any, scheme: any, name: string): void {
     );
 }
 
+function isTrueXHeader(req: Request, name: string) {
+    return (req.headers.get(`x-${name}`) || '').toLowerCase() === 'true';
+}
+
+function parsePort(req: Request): number {
+    if (req.port) {
+        return req.port;
+    }
+    const url = new URL(req.url);
+    if (url.port) {
+        return parseInt(url.port, 10);
+    }
+    if (url.protocol == 'https:') {
+        return 443;
+    }
+    return 80;
+}
+
+
 // the map isn't URL-decoded, so can't use searchParams since re-encoding can change
 // the values.
 function paramsToMap(params: string): Map<string, string[]> {
@@ -194,6 +213,7 @@ export class Firewall {
         addStrArray(wirefilter, scheme, 'http.request.body.form.values');
         // Dynamic fields
         addBoolen(wirefilter, scheme, 'cf.bot_management.verified_bot');
+        addNumber(wirefilter, scheme, 'cf.bot_management.score');
         addNumber(wirefilter, scheme, 'cf.threat_score');
         addNumber(wirefilter, scheme, 'cf.edge.server_port');
         addBoolen(wirefilter, scheme, 'cf.client.bot');
@@ -264,10 +284,10 @@ export class FirewallRule {
         this.addMapStrToCtx(exec_ctx, 'http.request.headers', headersToMap(req.headers));
         this.addStrArrayCtx(exec_ctx, 'http.request.headers.names', [...req.headers.keys()]);
         this.addStrArrayCtx(exec_ctx, 'http.request.headers.values', ([] as string[]).concat(...req.headers.values()));
-        this.addBoolenToCtx(exec_ctx, 'http.request.headers.truncated', (req.headers.get('x-http.request.headers.truncated') || '').toLowerCase() === 'true');
+        this.addBoolenToCtx(exec_ctx, 'http.request.headers.truncated', isTrueXHeader(req, 'http.request.headers.truncated'));
         // Body fields
         this.addStringToCtx(exec_ctx, 'http.request.body.raw', String(req.body || ''));
-        this.addBoolenToCtx(exec_ctx, 'http.request.body.truncated', (req.headers.get('x-http.request.body.truncated') || '').toLowerCase() === 'true');
+        this.addBoolenToCtx(exec_ctx, 'http.request.body.truncated', isTrueXHeader(req, 'http.request.body.truncated'));
         let bodyParams: Map<string, string[]>;
         if ((req.headers.get('Content-Type') || '').startsWith('application/x-www-form-urlencoded')) {
             bodyParams = paramsToMap(String(req.body || ''));
@@ -277,6 +297,13 @@ export class FirewallRule {
         this.addMapStrToCtx(exec_ctx, 'http.request.body.form', bodyParams);
         this.addStrArrayCtx(exec_ctx, 'http.request.body.form.names', [...bodyParams.keys()]);
         this.addStrArrayCtx(exec_ctx, 'http.request.body.form.values', ([] as string[]).concat(...bodyParams.values()));
+        // Dynamic fields
+        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.verified_bot', isTrueXHeader(req, 'cf.bot_management.verified_bot'));
+        this.addNumberToCtx(exec_ctx, 'cf.bot_management.score', parseInt(req.headers.get('x-cf.bot_management.score') || '100', 10));
+        this.addNumberToCtx(exec_ctx, 'cf.client_trust_score', parseInt(req.headers.get('x-cf.client_trust_score') || '100', 10));
+        this.addNumberToCtx(exec_ctx, 'cf.threat_score', parseInt(req.headers.get('x-cf.threat_score') || '100', 10));
+        this.addNumberToCtx(exec_ctx, 'cf.edge.server_port', parsePort(req));
+        this.addBoolenToCtx(exec_ctx, 'cf.client.bot', isTrueXHeader(req, 'cf.client.bot'));
         try {
             const matchResult = wirefilter.wirefilter_match(this.filter, exec_ctx);
             if (matchResult.ok.success != 1) {

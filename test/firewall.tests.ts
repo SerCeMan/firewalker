@@ -393,7 +393,6 @@ describe('Body fields', () => {
         }))).toBeTruthy();
     });
 
-
     it('should match the values of form fields in the HTTP request', () => {
         const rule = firewall.createFirewallRule(`
             http.request.body.form.values[0] == "test%40example.com" and
@@ -406,4 +405,68 @@ describe('Body fields', () => {
             method: 'POST'
         }))).toBeTruthy();
     });
+});
+
+describe('Dynamic fields', () => {
+    let firewall: Firewall;
+
+    beforeEach(() => {
+        firewall = new Firewall();
+    });
+
+    it('should match the request originates from a known bot or crawler, regardless of good or bad intent', () => {
+        const rule = firewall.createFirewallRule(`
+            cf.bot_management.verified_bot
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            headers: [['x-cf.bot_management.verified_bot', 'true']]
+        }))).toBeTruthy();
+    });
+
+    it('should match the threat score from 0–100, where 0 indicates low risk', () => {
+        const rule = firewall.createFirewallRule(`
+            cf.threat_score < 50
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            headers: [['x-cf.threat_score', '20']]
+        }))).toBeTruthy();
+    });
+
+    it('should match the bot management score used to measure if the request is from a human or a script.', () => {
+        const rule = firewall.createFirewallRule(`
+            cf.bot_management.score < 50
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            headers: [['x-cf.bot_management.score', '20']]
+        }))).toBeTruthy();
+    });
+
+    it('should match the port number at which Cloudflare\'s network received the request.', () => {
+        const rule = firewall.createFirewallRule(`
+            cf.edge.server_port == 22 or 
+            cf.edge.server_port == 443
+        `);
+
+        expect(rule.match(new Request('http://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('ssh://example.org:22'))).toBeTruthy();
+        expect(rule.match(new Request('https://example.org'))).toBeTruthy();
+    });
+
+    it('should match when a client is a known good bo', () => {
+        const rule = firewall.createFirewallRule(`
+            cf.client.bot
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            headers: [['x-cf.client.bot', 'true']]
+        }))).toBeTruthy();
+    });
+
 });
