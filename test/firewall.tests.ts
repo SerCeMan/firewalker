@@ -1,5 +1,4 @@
-import {Firewall} from '../firewall';
-import {Request} from 'node-fetch';
+import {Firewall, Request} from '../src';
 
 describe("Firewall rule", () => {
     // see https://developers.cloudflare.com/firewall/cf-firewall-language/

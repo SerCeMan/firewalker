@@ -4,7 +4,14 @@
   "version": "0.0.2",
   "homepage": "https://github.com/SerCeMan/firewalker",
   "repository": "github:SerCeMan/firewalker",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "lib/"
+  ],
   "scripts": {
+    "build": "rm -r dist/ && tsc",
     "test": "jest"
   },
   "devDependencies": {

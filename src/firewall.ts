@@ -65,10 +65,10 @@ export class Firewall {
         let libPath: string;
         switch (process.platform) {
             case "darwin":
-                libPath = resolve('libs/libwirefilter_ffi.dylib');
+                libPath = resolve('lib/libwirefilter_ffi.dylib');
                 break;
             case "linux":
-                libPath = resolve('libs/libwirefilter_ffi.so');
+                libPath = resolve('lib/libwirefilter_ffi.so');
                 break
             default:
                 throw new Error(`Unsupported platform: ${process.platform}`)

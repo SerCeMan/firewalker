@@ -9,6 +9,11 @@
     "removeComments": false,
     "strict": true,
     "target": "esnext",
+    "declaration": true,
+    "outDir": "dist/",
     "newLine": "LF"
-  }
+  },
+  "include": [
+    "src/"
+  ]
 }
