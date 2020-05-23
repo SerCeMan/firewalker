@@ -246,4 +246,49 @@ describe('Firewall rule', () => {
         expect(rule.match(new Request('http://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org'))).toBeTruthy();
     });
+
+    it('should match the HTTP URI arguments represented in a map', () => {
+        const firewall = new Firewall();
+        const rule = firewall.createFirewallRule(`
+            http.request.uri.args["search"][0] == "red+apples" or
+            http.request.uri.args["search"][1] == "red+apples"
+        `);
+        // TODO: support transformation functions
+        // const rule = firewall.createFirewallRule(`
+        //     http.request.uri.args["search"][0] == "red+apples"
+        // `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org?search=red+apples'))).toBeTruthy();
+        expect(rule.match(new Request('https://example.org?search=something+else&search=red+apples'))).toBeTruthy();
+        expect(rule.match(new Request('https://example.org?search=nothing&search2=nothing2'))).toBeFalsy();
+    });
+
+    it('should match the names of arguments in the HTTP URI query string', () => {
+        const firewall = new Firewall();
+        const rule = firewall.createFirewallRule(`
+            http.request.uri.args.names[0] == "search"
+        `);
+        // TODO: support transformation functions
+        // const rule = firewall.createFirewallRule(`
+        //     http.request.uri.args["search"][0] == "red+apples"
+        // `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org?search=red+apples'))).toBeTruthy();
+    });
+
+    it('should match the values of arguments in the HTTP URI query string', () => {
+        const firewall = new Firewall();
+        const rule = firewall.createFirewallRule(`
+            http.request.uri.args.values[0] == "red+apples"
+        `);
+        // TODO: support transformation functions
+        // const rule = firewall.createFirewallRule(`
+        //     http.request.uri.args["search"][0] == "red+apples"
+        // `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org?search=red+apples'))).toBeTruthy();
+    });
 });

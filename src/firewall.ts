@@ -26,13 +26,40 @@ function wirefilterByteArray(s: string) {
     return str;
 }
 
+function checkAdded(added: boolean, msg: string) {
+    if (!added) {
+        throw new Error(msg);
+    }
+}
+
 function addString(wirefilter: any, scheme: any, name: string): void {
-    wirefilter.wirefilter_add_type_field_to_scheme(
+    checkAdded(wirefilter.wirefilter_add_type_field_to_scheme(
         scheme,
         wirefilterString(name),
         WIREFILTER_TYPE_BYTES
-    );
+    ), `Failed to add ${name} to the scheme`);
 }
+
+// Map<String, Array<String>>
+function addMapToStrArray(wirefilter: any, scheme: any, name: string) {
+    checkAdded(wirefilter.wirefilter_add_type_field_to_scheme(
+        scheme,
+        wirefilterString(name),
+        wirefilter.wirefilter_create_map_type(
+            wirefilter.wirefilter_create_array_type(WIREFILTER_TYPE_BYTES)
+        )
+    ), `Failed to add ${name} to the scheme`);
+}
+
+// Array<String>
+function addStrArray(wirefilter: any, scheme: any, name: string) {
+    checkAdded(wirefilter.wirefilter_add_type_field_to_scheme(
+        scheme,
+        wirefilterString(name),
+        wirefilter.wirefilter_create_array_type(WIREFILTER_TYPE_BYTES)
+    ), `Failed to add ${name} to the scheme`);
+}
+
 
 function addIPaddr(wirefilter: any, scheme: any, name: string): void {
     wirefilter.wirefilter_add_type_field_to_scheme(
@@ -56,6 +83,43 @@ function addBoolen(wirefilter: any, scheme: any, name: string): void {
         wirefilterString(name),
         WIREFILTER_TYPE_BOOL
     );
+}
+
+// the map isn't URL-decoded, so can't use searchParams since re-encoding can change
+// the values.
+function paramsToMap(params: String): Map<string, string[]> {
+    if (params.length == 0) {
+        return new Map<string, string[]>();
+    }
+    const map = new Map<string, string[]>();
+    params.substring(1).split("&")
+        .map(v => v.split("="))
+        .forEach(pair => {
+            const [ key, val ] = pair;
+            const arr = map.get(key)
+            if (arr) {
+                arr.push(val);
+            } else {
+                map.set(key, [val]);
+            }
+        });
+    return map;
+}
+
+function paramNamesToArray(params: String): string[] {
+    if (params.length == 0) {
+        return [];
+    }
+    return params.substring(1).split("&")
+        .map(v => v.split("=")[0]);
+}
+
+function paramValuesToArray(params: String): string[] {
+    if (params.length == 0) {
+        return [];
+    }
+    return params.substring(1).split("&")
+        .map(v => v.split("=")[1]);
 }
 
 export class Firewall {
@@ -98,7 +162,9 @@ export class Firewall {
         addBoolen(wirefilter, scheme, 'ip.geoip.is_in_european_union');
         addBoolen(wirefilter, scheme, 'ssl');
         // Argument and value fields for URIs
-        // ...
+        addMapToStrArray(wirefilter, scheme, 'http.request.uri.args')
+        addStrArray(wirefilter, scheme, 'http.request.uri.args.names')
+        addStrArray(wirefilter, scheme, 'http.request.uri.args.values')
         // Header fields
         // ...
         // Body fields
@@ -166,6 +232,9 @@ export class FirewallRule {
         this.addStringToCtx(exec_ctx, 'ip.geoip.subdivision_2_iso_code', req.headers.get('x-ip.geoip.subdivision_2_iso_code') || '');
         this.addBoolenToCtx(exec_ctx, 'ip.geoip.is_in_european_union', (req.headers.get('x-ip.geoip.is_in_european_union') || '').toLowerCase() === 'true');
         this.addBoolenToCtx(exec_ctx, 'ssl', url.protocol === 'https:');
+        this.addMapStrToCtx(exec_ctx, 'http.request.uri.args', paramsToMap(url.search));
+        this.addStrArrayCtx(exec_ctx, 'http.request.uri.args.names', paramNamesToArray(url.search));
+        this.addStrArrayCtx(exec_ctx, 'http.request.uri.args.values', paramValuesToArray(url.search));
         try {
             const matchResult = wirefilter.wirefilter_match(this.filter, exec_ctx);
             if (matchResult.ok.success != 1) {
@@ -178,7 +247,7 @@ export class FirewallRule {
     }
 
     private addNumberToCtx(execCtx: any, name: string, value: number) {
-        FirewallRule.checkAdded(this.wirefilter.wirefilter_add_int_value_to_execution_context(
+        checkAdded(this.wirefilter.wirefilter_add_int_value_to_execution_context(
             execCtx,
             wirefilterString(name),
             value
@@ -186,7 +255,7 @@ export class FirewallRule {
     }
 
     private addStringToCtx(execCtx: any, name: string, value: string) {
-        FirewallRule.checkAdded(this.wirefilter.wirefilter_add_bytes_value_to_execution_context(
+        checkAdded(this.wirefilter.wirefilter_add_bytes_value_to_execution_context(
             execCtx,
             wirefilterString(name),
             wirefilterByteArray(value)
@@ -194,7 +263,7 @@ export class FirewallRule {
     }
 
     private addBoolenToCtx(execCtx: any, name: string, value: boolean) {
-        FirewallRule.checkAdded(this.wirefilter.wirefilter_add_bool_value_to_execution_context(
+        checkAdded(this.wirefilter.wirefilter_add_bool_value_to_execution_context(
             execCtx,
             wirefilterString(name),
             value
@@ -204,14 +273,14 @@ export class FirewallRule {
     private addIpAddrToCtx(execCtx: any, name: string, value: string) {
         if (value.indexOf('.') != -1) {
             const ipv4 = new Address4(value).toArray();
-            FirewallRule.checkAdded(this.wirefilter.wirefilter_add_ipv4_value_to_execution_context(
+            checkAdded(this.wirefilter.wirefilter_add_ipv4_value_to_execution_context(
                 execCtx,
                 wirefilterString(name),
                 ipv4,
             ), `Failed to add ${name}=${value} to the context`);
         } else if (value.indexOf(':') != -1) {
             const ipv6 = new Address6(value).toUnsignedByteArray();
-            FirewallRule.checkAdded(this.wirefilter.wirefilter_add_ipv6_value_to_execution_context(
+            checkAdded(this.wirefilter.wirefilter_add_ipv6_value_to_execution_context(
                 execCtx,
                 wirefilterString(name),
                 ipv6,
@@ -221,9 +290,45 @@ export class FirewallRule {
         }
     }
 
-    private static checkAdded(added: boolean, msg: string) {
-        if (!added) {
-            throw new Error(msg);
-        }
+    private addMapStrToCtx(execCtx: any, name: string, value: Map<string, string[]>) {
+        const arrayType = this.wirefilter.wirefilter_create_array_type(WIREFILTER_TYPE_BYTES);
+        const mapValue = this.wirefilter.wirefilter_create_map(arrayType);
+        value.forEach((mapVal, mapKey) => {
+            const arr = this.wirefilter.wirefilter_create_array(WIREFILTER_TYPE_BYTES);
+            mapVal.forEach((val, ind) => {
+                checkAdded(this.wirefilter.wirefilter_add_bytes_value_to_array(
+                    arr,
+                    ind,
+                    wirefilterByteArray(val)
+                ), `Failed to add a ${val} to array`)
+            })
+            checkAdded(this.wirefilter.wirefilter_add_array_value_to_map(
+                mapValue,
+                wirefilterString(mapKey),
+                arr
+            ), `Failed to add ${mapKey} value to map`);
+        })
+        checkAdded(this.wirefilter.wirefilter_add_map_value_to_execution_context(
+            execCtx,
+            wirefilterString(name),
+            mapValue,
+        ), `Failed to add ${name}=${JSON.stringify(value)} to the context`);
     }
+
+    private addStrArrayCtx(execCtx: any, name: string, value: string[]) {
+        const arr = this.wirefilter.wirefilter_create_array(WIREFILTER_TYPE_BYTES);
+        value.forEach((val, ind) => {
+            checkAdded(this.wirefilter.wirefilter_add_bytes_value_to_array(
+                arr,
+                ind,
+                wirefilterByteArray(val)
+            ), `Failed to add a ${val} to array`)
+        })
+        checkAdded(this.wirefilter.wirefilter_add_array_value_to_execution_context(
+            execCtx,
+            wirefilterString(name),
+            arr,
+        ), `Failed to add ${name}=${JSON.stringify(value)} to the context`)
+    }
+
 }

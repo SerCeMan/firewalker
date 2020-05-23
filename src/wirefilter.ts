@@ -646,7 +646,7 @@ lib.wirefilter_free_map = [ref.types.void, [
 // wirefilter_array_t *wirefilter_create_array(wirefilter_type_t type);
 
 lib.wirefilter_create_array = [ref.refType(wirefilter_array_t), [
-    ref.refType(wirefilter_type_t)
+    wirefilter_type_t
 ]];
 
 //
