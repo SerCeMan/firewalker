@@ -233,7 +233,7 @@ export class Firewall {
      *
      * @param rule waf language expression
      */
-    createFirewallRule(rule: string): FirewallRule {
+    createRule(rule: string): FirewallRule {
         return new WirefilterFirewallRule(this.wirefilter, this.scheme, rule);
     }
 }
