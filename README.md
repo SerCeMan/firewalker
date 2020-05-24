@@ -1,6 +1,5 @@
-![]()
+![](https://github.com/SerCeMan/firewalker/raw/master/logo/logo.png)
 
-# Firewalker
 [![Build Status](https://travis-ci.org/SerCeMan/firewalker.svg?branch=master)](https://travis-ci.org/SerCeMan/firewalker)
 [![Codecov](https://codecov.io/gh/SerCeMan/firewalker/branch/master/graph/badge.svg)](https://codecov.io/gh/SerCeMan/firewalker)
 [![npm version](https://badge.fury.io/js/firewalker.svg)](https://www.npmjs.com/package/firewalker)
