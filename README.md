@@ -5,7 +5,7 @@
 [![npm version](https://badge.fury.io/js/firewalker.svg)](https://www.npmjs.com/package/firewalker)
 
 
-A framework for executing and testing Cloudflare WAF rules locally, see more [examples](https://github.com/SerCeMan/firewalker/blob/master/test/firewall.tests.ts).
+A framework for executing and testing Cloudflare WAF rules locally.
 
 ```typescript
 const firewall = new Firewall()
@@ -17,9 +17,11 @@ rule.match(new Request('http://www.example.org')) // -> true
 rule.match(new Request('http://www.example.com')) // -> false
 ```
 
+See more [examples](https://github.com/SerCeMan/firewalker/blob/master/test/firewall.tests.ts).
+
 ## Motivation
 
-It's easy to treat firewall rules as plain configuration. However, over time the number of rules and their complexity grows. It's incredibly easy to manage a couple of rules that look like.
+It's easy to treat firewall rules as plain configuration. It's incredibly easy to manage a couple of rules that look like.
 ```
 http.host eq "www.example.org" 
 ```
@@ -35,9 +37,9 @@ and (
 or cf.threat_score lt 10
 ``` 
 
-Manually testing the rule like the above is error-prone as humans are known to make mistakes. After a few steps up in complexity, it becomes apparent that firewall rules are code, and need to be treated as code. They need to be stored in a source code repository, managed with a tool like Terraform, and the changes need to be tested on CI. Here is where Firewalker comes into play allowing you to write unit tests to ensure that a change to the path regex isn't going to block all of the traffic to your site or cancel out the effect of the rule completely.
+Over time, the number of rules and their complexity grows. Manually testing rules like the above is error-prone as humans are known to make mistakes. After a few steps up in complexity, it becomes apparent that firewall rules are code, and need to be treated as code. They need to be stored in a source code repository, managed with a tool like Terraform, and the changes need to be tested on CI. 
 
-For instance, for the rule above, you can define multiple assertions using Firewalker.
+Here is where Firewalker comes into play allowing you to write unit tests to ensure that a change to the path regex isn't going to block all of the traffic to your site or cancel out the effect of the rule completely. For instance, for the rule above, you can define multiple assertions with jest.
 
 ```typescript
 const rule = firewall.createRule(/* */)
@@ -51,6 +53,7 @@ expect(rule.match(new Request('http://www.example.org/login/user?token=abc', {
 // etc
 ```
 
+Firewalker builds on top of Cloudflare's [wirefilter](https://github.com/cloudflare/wirefilter) rule engine and provides API to construct the requests in JS. After all, if the tests for your workers are in JS, why not to use the same syntax for the WAF rules?
 
 ## Supported platforms
 Firewalker relies on a binary build [wirefilter](https://github.com/cloudflare/wirefilter) to run and execute the firewall rules. Therefore, only the platforms which binaries were pre-built will be able to run Firewalker. Currently supported platforms are:
