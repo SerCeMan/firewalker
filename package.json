@@ -14,7 +14,7 @@
     "build": "rm -rf dist/ && tsc",
     "test": "jest",
     "lint": "eslint src/* test/*",
-    "validate": "yarn lint && yarn build && yarn test",
+    "validate": "yarn lint && yarn build && yarn test --coverage",
     "prepublishOnly": "yarn validate"
   },
   "devDependencies": {

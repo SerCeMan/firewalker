@@ -8,6 +8,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "removeComments": false,
+    "sourceMap": true,
     "strict": true,
     "target": "esnext",
     "declaration": true,

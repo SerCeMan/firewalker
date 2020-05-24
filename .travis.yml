@@ -18,3 +18,5 @@ before_install:
 
 script:
   - yarn validate
+  - bash <(curl -s https://codecov.io/bash)
+
