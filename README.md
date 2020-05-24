@@ -1,3 +1,5 @@
+![]()
+
 # Firewalker
 [![Build Status](https://travis-ci.org/SerCeMan/firewalker.svg?branch=master)](https://travis-ci.org/SerCeMan/firewalker)
 [![Codecov](https://codecov.io/gh/SerCeMan/firewalker/branch/master/graph/badge.svg)](https://codecov.io/gh/SerCeMan/firewalker)
@@ -44,9 +46,9 @@ const rule = firewall.createRule(/* */)
 expect(rule.match(new Request('http://www.example.org'))).toBeFalsy()
 expect(rule.match(new Request('http://www.example.org?token=abc'))).toBeTruthy()
 expect(rule.match(new Request('http://www.example.org/login/user?token=abc'))).toBeFalsy()
-expect(rule.match(new Request('http://www.example.org/login/user?token=abc'), {
-    cf: { 'cf.threat_score': 5 }
-})).toBeTruthy()
+expect(rule.match(new Request('http://www.example.org/login/user?token=abc', {
+    cf: {'cf.threat_score': 5}
+}))).toBeTruthy();
 // etc
 ```
 
