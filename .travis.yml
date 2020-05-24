@@ -18,3 +18,4 @@ before_install:
 
 script:
   - yarn validate
+  - codecov -f coverage/*.json
