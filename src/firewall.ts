@@ -157,6 +157,11 @@ function headersToMap(headers: Headers): Map<string, string[]> {
     return map;
 }
 
+/**
+ * Firewall that defines the schema for the rules supported by the Cloudflare WAF language.
+ *
+ * see https://developers.cloudflare.com/firewall/cf-firewall-language/
+ */
 export class Firewall {
     private readonly wirefilter: any;
     private readonly scheme: any;
@@ -175,9 +180,8 @@ export class Firewall {
         }
         const wirefilter = initWirefilter(libPath);
         const scheme = wirefilter.wirefilter_create_scheme();
-        // add tranformation functions
+        // add transformation functions
         wirefilter.add_standard_functions(scheme);
-        // see https://developers.cloudflare.com/firewall/cf-firewall-language/
         // Standard fields
         addString(wirefilter, scheme, 'http.cookie');
         addString(wirefilter, scheme, 'http.host');
@@ -224,14 +228,33 @@ export class Firewall {
         this.scheme = scheme;
     }
 
+    /**
+     * Creates a firewall rule from a WAF language expression.
+     *
+     * @param rule waf language expression
+     */
     createFirewallRule(rule: string): FirewallRule {
-        return new FirewallRule(this.wirefilter, this.scheme, rule);
+        return new WirefilterFirewallRule(this.wirefilter, this.scheme, rule);
     }
 }
 
-// Firewall rules
+/**
+ * Firewall rule that can be matched against the request.
+ */
+export interface FirewallRule {
+    /**
+     * Matches the request against the request.
+     *
+     * Note, not all of the parameters can be obtained from a request. For instance, thread score, geoip, etc.
+     * can't be easily obtained from the request. For such cases, a special x- header can be supplied, e.g. for
+     * 'ip.src', the header 'x-ip.src' will be used to get the source value.
+     *
+     * @param req the request which
+     */
+    match(req: Request): boolean;
+}
 
-export class FirewallRule {
+class WirefilterFirewallRule implements FirewallRule {
     private readonly filter: any;
 
     constructor(
@@ -276,7 +299,7 @@ export class FirewallRule {
         this.addStringToCtx(exec_ctx, 'ip.geoip.country', req.headers.get('x-ip.geoip.country') || '');
         this.addStringToCtx(exec_ctx, 'ip.geoip.subdivision_1_iso_code', req.headers.get('x-ip.geoip.subdivision_1_iso_code') || '');
         this.addStringToCtx(exec_ctx, 'ip.geoip.subdivision_2_iso_code', req.headers.get('x-ip.geoip.subdivision_2_iso_code') || '');
-        this.addBoolenToCtx(exec_ctx, 'ip.geoip.is_in_european_union', (req.headers.get('x-ip.geoip.is_in_european_union') || '').toLowerCase() === 'true');
+        this.addBoolenToCtx(exec_ctx, 'ip.geoip.is_in_european_union', isTrueXHeader(req, 'ip.geoip.is_in_european_union'));
         this.addBoolenToCtx(exec_ctx, 'ssl', url.protocol === 'https:');
         // Argument and value fields for URIs
         this.addMapStrToCtx(exec_ctx, 'http.request.uri.args', paramsToMap(url.search));
@@ -401,5 +424,4 @@ export class FirewallRule {
             arr,
         ), `Failed to add ${name}=${JSON.stringify(value)} to the context`);
     }
-
 }
