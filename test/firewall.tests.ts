@@ -124,7 +124,9 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeTruthy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-http.request.version', 'HTTP/3']]
+            cf: {
+                'http.request.version': 2
+            }
         }))).toBeFalsy();
     });
 
@@ -147,16 +149,16 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.src', '93.184.216.34']]
+            cf: {'ip.src': '93.184.216.34'}
         }))).toBeTruthy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.src', '1.2.3.4']]
+            cf: {'ip.src': '1.2.3.4'}
         }))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.src', '2001:0db8:85a3:0000:0000:8a2e:0370:7334']]
+            cf: {'ip.src': '2001:0db8:85a3:0000:0000:8a2e:0370:7334'}
         }))).toBeTruthy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.src', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff']]
+            cf: {'ip.src': 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'}
         }))).toBeFalsy();
     });
 
@@ -167,7 +169,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.geoip.asnum', '1234']]
+            cf: {'ip.geoip.asnum': 1234}
         }))).toBeTruthy();
     });
 
@@ -178,7 +180,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.geoip.continent', 'EU']]
+            cf: {'ip.geoip.continent': 'EU'}
         }))).toBeTruthy();
     });
 
@@ -189,7 +191,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.geoip.country', 'RU']]
+            cf: {'ip.geoip.country': 'RU'}
         }))).toBeTruthy();
     });
 
@@ -200,7 +202,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.geoip.subdivision_1_iso_code', 'GB-ENG']]
+            cf: {'ip.geoip.subdivision_1_iso_code': 'GB-ENG'}
         }))).toBeTruthy();
     });
 
@@ -211,7 +213,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.geoip.subdivision_2_iso_code', 'GB-SWK']]
+            cf: {'ip.geoip.subdivision_2_iso_code': 'GB-SWK'}
         }))).toBeTruthy();
     });
 
@@ -222,7 +224,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-ip.geoip.is_in_european_union', 'true']]
+            cf: {'ip.geoip.is_in_european_union': true}
         }))).toBeTruthy();
     });
 
@@ -248,10 +250,6 @@ describe('Argument and value fields for URIs', () => {
             http.request.uri.args["search"][0] == "red+apples" or
             http.request.uri.args["search"][1] == "red+apples"
         `);
-        // TODO: support transformation functions
-        // const rule = firewall.createFirewallRule(`
-        //     http.request.uri.args["search"][0] == "red+apples"
-        // `);
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org?search=red+apples'))).toBeTruthy();
@@ -263,10 +261,6 @@ describe('Argument and value fields for URIs', () => {
         const rule = firewall.createRule(`
             http.request.uri.args.names[0] == "search"
         `);
-        // TODO: support transformation functions
-        // const rule = firewall.createFirewallRule(`
-        //     any(http.request.uri.args["search"][*] == "red+apples")
-        // `);
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org?search=red+apples'))).toBeTruthy();
@@ -329,7 +323,7 @@ describe('Header fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-http.request.headers.truncated', 'true']]
+            cf: {'http.request.headers.truncated': true}
         }))).toBeTruthy();
     });
 });
@@ -360,7 +354,7 @@ describe('Body fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-http.request.body.truncated', 'true']]
+            cf: {'http.request.body.truncated': true}
         }))).toBeTruthy();
     });
 
@@ -417,7 +411,7 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-cf.bot_management.verified_bot', 'true']]
+            cf: {'cf.bot_management.verified_bot': true}
         }))).toBeTruthy();
     });
 
@@ -428,7 +422,7 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-cf.threat_score', '20']]
+            cf: {'cf.threat_score': 20}
         }))).toBeTruthy();
     });
 
@@ -439,7 +433,7 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-cf.bot_management.score', '20']]
+            cf: {'cf.bot_management.score': 20}
         }))).toBeTruthy();
     });
 
@@ -461,7 +455,7 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            headers: [['x-cf.client.bot', 'true']]
+            cf: {'cf.client.bot': true}
         }))).toBeTruthy();
     });
 });

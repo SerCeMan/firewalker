@@ -8,7 +8,7 @@ import {
     WIREFILTER_TYPE_INT,
     WIREFILTER_TYPE_IP
 } from './wirefilter';
-import {Headers, Request} from 'node-fetch';
+import {Headers, Request as FetchRequest, RequestInfo, RequestInit} from 'node-fetch';
 import {Address4, Address6} from 'ip-address';
 import * as path from 'path';
 
@@ -83,10 +83,6 @@ function addBoolen(wirefilter: any, scheme: any, name: string): void {
         wirefilterString(name),
         WIREFILTER_TYPE_BOOL
     );
-}
-
-function isTrueXHeader(req: Request, name: string) {
-    return (req.headers.get(`x-${name}`) || '').toLowerCase() === 'true';
 }
 
 function parsePort(req: Request): number {
@@ -239,6 +235,47 @@ export class Firewall {
 }
 
 /**
+ * The set of extension fields that can't be directly derived from the supplied request, and need to be specified
+ * explicitly.
+ */
+export type CfRequestExt = Readonly<{
+    'http.request.version'?: number;
+    'ip.src'?: string;
+    'ip.geoip.asnum'?: number;
+    'ip.geoip.continent'?: string;
+    'ip.geoip.country'?: string;
+    'ip.geoip.subdivision_1_iso_code'?: string;
+    'ip.geoip.subdivision_2_iso_code'?: string;
+    'ip.geoip.is_in_european_union'?: boolean;
+    'http.request.headers.truncated'?: boolean;
+    'http.request.body.truncated'?: boolean;
+    'cf.bot_management.verified_bot'?: boolean;
+    'cf.bot_management.score'?: number;
+    'cf.client_trust_score'?: number;
+    'cf.threat_score'?: number;
+    'cf.client.bot'?: boolean;
+}>;
+
+/**
+ * Cloudflare fields request extension.
+ */
+export interface CfRequestInit extends RequestInit {
+    cf?: CfRequestExt
+}
+
+/**
+ * A request potentially augmented with the Cloudflare extension fields.
+ */
+export class Request extends FetchRequest {
+    readonly cf: CfRequestExt;
+
+    constructor(input: RequestInfo, init?: CfRequestInit) {
+        super(input, init);
+        this.cf = (init || {}).cf || {};
+    }
+}
+
+/**
  * Firewall rule that can be matched against the request.
  */
 export interface FirewallRule {
@@ -246,10 +283,10 @@ export interface FirewallRule {
      * Matches the request against the request.
      *
      * Note, not all of the parameters can be obtained from a request. For instance, thread score, geoip, etc.
-     * can't be easily obtained from the request. For such cases, a special x- header can be supplied, e.g. for
-     * 'ip.src', the header 'x-ip.src' will be used to get the source value.
+     * can't be easily obtained from the request. For such cases, a special cf object can be supplied, e.g. for
+     * 'ip.src, cf: {"ip.scr": '1.2.3.4'} can be used.
      *
-     * @param req the request which
+     * @param req the request which the rule will matched against.
      */
     match(req: Request): boolean;
 }
@@ -282,24 +319,24 @@ class WirefilterFirewallRule implements FirewallRule {
         const exec_ctx = wirefilter.wirefilter_create_execution_context(this.scheme);
         const url = new URL(req.url);
         // Standard fields
-        this.addStringToCtx(exec_ctx, 'http.cookie', req.headers.get('Cookie') || '');
+        this.addStringToCtx(exec_ctx, 'http.cookie', req.headers.get('Cookie') ?? '');
         this.addStringToCtx(exec_ctx, 'http.host', url.hostname);
-        this.addStringToCtx(exec_ctx, 'http.referer', req.headers.get('Referer') || '');
+        this.addStringToCtx(exec_ctx, 'http.referer', req.headers.get('Referer') ?? '');
         this.addStringToCtx(exec_ctx, 'http.request.full_uri', req.url);
         this.addStringToCtx(exec_ctx, 'http.request.method', req.method);
         this.addStringToCtx(exec_ctx, 'http.request.uri', `${url.pathname}${url.search}`);
         this.addStringToCtx(exec_ctx, 'http.request.uri.path', url.pathname);
         this.addStringToCtx(exec_ctx, 'http.request.uri.query', url.searchParams.toString());
-        this.addStringToCtx(exec_ctx, 'http.user_agent', req.headers.get('User-Agent') || '');
-        this.addNumberToCtx(exec_ctx, 'http.request.version', parseInt(req.headers.get('x-http.request.version') || '1', 10));
-        this.addStringToCtx(exec_ctx, 'http.x_forwarded_for', req.headers.get('X-Forwarded-For') || '');
-        this.addIpAddrToCtx(exec_ctx, 'ip.src', req.headers.get('x-ip.src') || '0.0.0.0');
-        this.addNumberToCtx(exec_ctx, 'ip.geoip.asnum', parseInt(req.headers.get('x-ip.geoip.asnum') || '0', 10));
-        this.addStringToCtx(exec_ctx, 'ip.geoip.continent', req.headers.get('x-ip.geoip.continent') || '');
-        this.addStringToCtx(exec_ctx, 'ip.geoip.country', req.headers.get('x-ip.geoip.country') || '');
-        this.addStringToCtx(exec_ctx, 'ip.geoip.subdivision_1_iso_code', req.headers.get('x-ip.geoip.subdivision_1_iso_code') || '');
-        this.addStringToCtx(exec_ctx, 'ip.geoip.subdivision_2_iso_code', req.headers.get('x-ip.geoip.subdivision_2_iso_code') || '');
-        this.addBoolenToCtx(exec_ctx, 'ip.geoip.is_in_european_union', isTrueXHeader(req, 'ip.geoip.is_in_european_union'));
+        this.addStringToCtx(exec_ctx, 'http.user_agent', req.headers.get('User-Agent') ?? '');
+        this.addNumberToCtx(exec_ctx, 'http.request.version', req.cf['http.request.version'] ?? 1);
+        this.addStringToCtx(exec_ctx, 'http.x_forwarded_for', req.headers.get('X-Forwarded-For') ?? '');
+        this.addIpAddrToCtx(exec_ctx, 'ip.src', req.cf['ip.src'] ?? '0.0.0.0');
+        this.addNumberToCtx(exec_ctx, 'ip.geoip.asnum', req.cf['ip.geoip.asnum'] ?? 0);
+        this.addStringToCtx(exec_ctx, 'ip.geoip.continent', req.cf['ip.geoip.continent'] ?? '');
+        this.addStringToCtx(exec_ctx, 'ip.geoip.country', req.cf['ip.geoip.country'] ?? '');
+        this.addStringToCtx(exec_ctx, 'ip.geoip.subdivision_1_iso_code', req.cf['ip.geoip.subdivision_1_iso_code'] ?? '');
+        this.addStringToCtx(exec_ctx, 'ip.geoip.subdivision_2_iso_code', req.cf['ip.geoip.subdivision_2_iso_code'] ?? '');
+        this.addBoolenToCtx(exec_ctx, 'ip.geoip.is_in_european_union', req.cf['ip.geoip.is_in_european_union'] ?? false);
         this.addBoolenToCtx(exec_ctx, 'ssl', url.protocol === 'https:');
         // Argument and value fields for URIs
         this.addMapStrToCtx(exec_ctx, 'http.request.uri.args', paramsToMap(url.search));
@@ -309,13 +346,13 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addMapStrToCtx(exec_ctx, 'http.request.headers', headersToMap(req.headers));
         this.addStrArrayCtx(exec_ctx, 'http.request.headers.names', [...req.headers.keys()]);
         this.addStrArrayCtx(exec_ctx, 'http.request.headers.values', ([] as string[]).concat(...req.headers.values()));
-        this.addBoolenToCtx(exec_ctx, 'http.request.headers.truncated', isTrueXHeader(req, 'http.request.headers.truncated'));
+        this.addBoolenToCtx(exec_ctx, 'http.request.headers.truncated', req.cf['http.request.headers.truncated'] ?? false);
         // Body fields
-        this.addStringToCtx(exec_ctx, 'http.request.body.raw', String(req.body || ''));
-        this.addBoolenToCtx(exec_ctx, 'http.request.body.truncated', isTrueXHeader(req, 'http.request.body.truncated'));
+        this.addStringToCtx(exec_ctx, 'http.request.body.raw', String(req.body ?? ''));
+        this.addBoolenToCtx(exec_ctx, 'http.request.body.truncated', req.cf['http.request.body.truncated'] ?? false);
         let bodyParams: Map<string, string[]>;
-        if ((req.headers.get('Content-Type') || '').startsWith('application/x-www-form-urlencoded')) {
-            bodyParams = paramsToMap(String(req.body || ''));
+        if ((req.headers.get('Content-Type') ?? '').startsWith('application/x-www-form-urlencoded')) {
+            bodyParams = paramsToMap(String(req.body ?? ''));
         } else {
             bodyParams = new Map<string, string[]>();
         }
@@ -323,12 +360,12 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addStrArrayCtx(exec_ctx, 'http.request.body.form.names', [...bodyParams.keys()]);
         this.addStrArrayCtx(exec_ctx, 'http.request.body.form.values', ([] as string[]).concat(...bodyParams.values()));
         // Dynamic fields
-        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.verified_bot', isTrueXHeader(req, 'cf.bot_management.verified_bot'));
-        this.addNumberToCtx(exec_ctx, 'cf.bot_management.score', parseInt(req.headers.get('x-cf.bot_management.score') || '100', 10));
-        this.addNumberToCtx(exec_ctx, 'cf.client_trust_score', parseInt(req.headers.get('x-cf.client_trust_score') || '100', 10));
-        this.addNumberToCtx(exec_ctx, 'cf.threat_score', parseInt(req.headers.get('x-cf.threat_score') || '100', 10));
+        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.verified_bot', req.cf['cf.bot_management.verified_bot'] ?? false);
+        this.addNumberToCtx(exec_ctx, 'cf.bot_management.score', req.cf['cf.bot_management.score'] ?? 100);
+        this.addNumberToCtx(exec_ctx, 'cf.client_trust_score', req.cf['cf.client_trust_score'] ?? 100);
+        this.addNumberToCtx(exec_ctx, 'cf.threat_score', req.cf['cf.threat_score'] || 100);
         this.addNumberToCtx(exec_ctx, 'cf.edge.server_port', parsePort(req));
-        this.addBoolenToCtx(exec_ctx, 'cf.client.bot', isTrueXHeader(req, 'cf.client.bot'));
+        this.addBoolenToCtx(exec_ctx, 'cf.client.bot', req.cf['cf.client.bot'] ?? false);
         try {
             const matchResult = wirefilter.wirefilter_match(this.filter, exec_ctx);
             if (matchResult.ok.success != 1) {

@@ -1,7 +1,5 @@
 export {
     Firewall,
-    FirewallRule
-} from './firewall';
-export {
+    FirewallRule,
     Request
-} from 'node-fetch';
+} from './firewall';

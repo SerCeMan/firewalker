@@ -31,6 +31,7 @@ and (
   any(http.request.uri.args.names[*] == "token") or
   ip.src in { 93.184.216.34 62.122.170.171 }
 )
+or cf.threat_score lt 10
 ``` 
 
 Manually testing the rule like the above is error-prone as humans are known to make mistakes. After a few steps up in complexity, it becomes apparent that firewall rules are code, and need to be treated as code. They need to be stored in a source code repository, managed with a tool like Terraform, and the changes need to be tested on CI. Here is where Firewalker comes into play allowing you to write unit tests to ensure that a change to the path regex isn't going to block all of the traffic to your site or cancel out the effect of the rule completely.
@@ -43,6 +44,9 @@ const rule = firewall.createRule(/* */)
 expect(rule.match(new Request('http://www.example.org'))).toBeFalsy()
 expect(rule.match(new Request('http://www.example.org?token=abc'))).toBeTruthy()
 expect(rule.match(new Request('http://www.example.org/login/user?token=abc'))).toBeFalsy()
+expect(rule.match(new Request('http://www.example.org/login/user?token=abc'), {
+    cf: { 'cf.threat_score': 5 }
+})).toBeTruthy()
 // etc
 ```
 

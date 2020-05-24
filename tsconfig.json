@@ -10,12 +10,9 @@
     "removeComments": false,
     "sourceMap": true,
     "strict": true,
-    "target": "esnext",
+    "target": "es2018",
     "declaration": true,
     "outDir": "dist/",
     "newLine": "LF"
-  },
-  "include": [
-    "src/"
-  ]
+  }
 }
