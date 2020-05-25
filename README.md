@@ -5,7 +5,7 @@
 [![npm version](https://badge.fury.io/js/firewalker.svg)](https://www.npmjs.com/package/firewalker)
 
 
-A framework for executing and testing Cloudflare WAF rules locally.
+A framework for executing and testing Cloudflare Firewall rules locally.
 
 ```typescript
 const firewall = new Firewall()
