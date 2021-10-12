@@ -363,7 +363,7 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addBoolenToCtx(exec_ctx, 'cf.bot_management.verified_bot', req.cf['cf.bot_management.verified_bot'] ?? false);
         this.addNumberToCtx(exec_ctx, 'cf.bot_management.score', req.cf['cf.bot_management.score'] ?? 100);
         this.addNumberToCtx(exec_ctx, 'cf.client_trust_score', req.cf['cf.client_trust_score'] ?? 100);
-        this.addNumberToCtx(exec_ctx, 'cf.threat_score', req.cf['cf.threat_score'] || 100);
+        this.addNumberToCtx(exec_ctx, 'cf.threat_score', req.cf['cf.threat_score'] ?? 100);
         this.addNumberToCtx(exec_ctx, 'cf.edge.server_port', parsePort(req));
         this.addBoolenToCtx(exec_ctx, 'cf.client.bot', req.cf['cf.client.bot'] ?? false);
         try {
