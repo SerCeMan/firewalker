@@ -422,6 +422,9 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
+            cf: {'cf.threat_score': 0}
+        }))).toBeTruthy();
+        expect(rule.match(new Request('https://example.org', {
             cf: {'cf.threat_score': 20}
         }))).toBeTruthy();
     });
