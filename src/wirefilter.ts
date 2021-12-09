@@ -47,6 +47,10 @@ const wirefilter_map_t = Struct({});
 
 const wirefilter_array_t = Struct({});
 
+// typedef struct wirefilter_list wirefilter_list_t;
+
+const wirefilter_list_t = Struct({});
+
 //
 // typedef struct {
 //     const char *data;
@@ -372,6 +376,26 @@ lib.wirefilter_add_type_field_to_scheme = [ref.types.bool, [
     ref.refType(wirefilter_scheme_t),
     wirefilter_externally_allocated_str_t,
     wirefilter_type_t,
+]];
+
+// wirefilter_list_t *wirefilter_create_always_list();
+
+lib.wirefilter_create_always_list = [ref.refType(wirefilter_list_t), []];
+
+// wirefilter_list_t *wirefilter_create_never_list();
+
+lib.wirefilter_create_never_list = [ref.refType(wirefilter_list_t), []];
+
+// bool wirefilter_add_type_list_to_scheme(
+//     wirefilter_scheme_t *scheme,
+//     wirefilter_type_t type,
+//     wirefilter_list_t *list
+// );
+
+lib.wirefilter_add_type_list_to_scheme = [ref.types.bool, [
+    ref.refType(wirefilter_scheme_t),
+    wirefilter_type_t,
+    ref.refType(wirefilter_list_t),
 ]];
 
 //
@@ -858,6 +882,10 @@ lib.wirefilter_get_version = [wirefilter_static_rust_allocated_str_t, []];
 
 lib.add_standard_functions = [ref.types.void, [
     ref.refType(wirefilter_scheme_t)
+]];
+
+lib.set_nevermatch_iplist = [ref.types.bool, [
+    ref.refType(wirefilter_execution_context_t)
 ]];
 
 // patch ended

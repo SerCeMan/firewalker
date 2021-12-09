@@ -60,6 +60,13 @@ function addStrArray(wirefilter: any, scheme: any, name: string) {
     ), `Failed to add ${name} to the scheme`);
 }
 
+function addIPList(wirefilter: any, scheme: any, name: string) {
+    checkAdded(wirefilter.wirefilter_add_type_list_to_scheme(
+        scheme,
+        WIREFILTER_TYPE_IP,
+        wirefilter.wirefilter_create_never_list()
+    ), `Failed to add ${name} to the scheme`);
+}
 
 function addIPaddr(wirefilter: any, scheme: any, name: string): void {
     wirefilter.wirefilter_add_type_field_to_scheme(
@@ -220,6 +227,7 @@ export class Firewall {
         addNumber(wirefilter, scheme, 'cf.edge.server_port');
         addBoolen(wirefilter, scheme, 'cf.client.bot');
         addNumber(wirefilter, scheme, 'cf.client_trust_score');
+        addIPList(wirefilter, scheme, 'any?');
         this.wirefilter = wirefilter;
         this.scheme = scheme;
     }
@@ -366,6 +374,8 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addNumberToCtx(exec_ctx, 'cf.threat_score', req.cf['cf.threat_score'] ?? 100);
         this.addNumberToCtx(exec_ctx, 'cf.edge.server_port', parsePort(req));
         this.addBoolenToCtx(exec_ctx, 'cf.client.bot', req.cf['cf.client.bot'] ?? false);
+        // IP Lists
+        checkAdded(this.wirefilter.set_nevermatch_iplist(exec_ctx), 'can\'t add nevermatch list');
         try {
             const matchResult = wirefilter.wirefilter_match(this.filter, exec_ctx);
             if (matchResult.ok.success != 1) {

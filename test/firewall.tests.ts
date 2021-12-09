@@ -536,3 +536,21 @@ describe('Transformation function', () => {
     });
 });
 
+describe('IP Lists', () => {
+    let firewall: Firewall;
+
+    beforeEach(() => {
+        firewall = new Firewall();
+    });
+
+    it('an IP is not in an IP list', () => {
+        const rule = firewall.createRule(`
+            (ip.src in $office_network)
+        `);
+
+        expect(rule.match(new Request('http://example.org', {
+            cf: {'ip.src': '1.2.3.4'}
+        }))).toBeFalsy();
+    });
+});
+
