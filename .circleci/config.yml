@@ -1,8 +1,13 @@
 version: 2.1
 orbs:
   node: circleci/node@4.7
-workflows:
+jobs:
   validate:
-    jobs:
-      - node/run:
-          yarn-run: yarn validate
+    docker:
+      - image: cimg/node:12.22.7
+    steps:
+      - run: node --version
+      - run: yarn versions
+      - checkout
+      - run: yarn install
+      - run: yarn validate
