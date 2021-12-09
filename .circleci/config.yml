@@ -11,3 +11,8 @@ jobs:
       - checkout
       - run: yarn install
       - run: yarn validate
+workflows:
+  version: 2
+  validate:
+    jobs:
+      - validate
