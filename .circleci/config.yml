@@ -2,13 +2,7 @@ version: 2.1
 orbs:
   node: circleci/node@4.7
 workflows:
-  test:
+  validate:
     jobs:
-      - node/test:
-          version: '16.10'
-          pkg-manager: yarn
-      - steps:
-          run:
-            name: Yarn Validate
-            command: yarn install --immutable
-
+      - node/run:
+          yarn-run: yarn validate
