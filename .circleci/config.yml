@@ -7,4 +7,8 @@ workflows:
       - node/test:
           version: '16.10'
           pkg-manager: yarn
+      - steps:
+          run:
+            name: Yarn Validate
+            command: yarn install --immutable
 
