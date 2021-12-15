@@ -415,6 +415,17 @@ describe('Dynamic fields', () => {
         }))).toBeTruthy();
     });
 
+    it('should match the request with a known JA3 hash', () => {
+        const rule = firewall.createRule(`
+            cf.bot_management.ja3_hash == "388a2f0ab9bd102d45826cc2af4e183a"
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            cf: {'cf.bot_management.ja3_hash': '388a2f0ab9bd102d45826cc2af4e183a'}
+        }))).toBeTruthy();
+    });
+
     it('should match the threat score from 0–100, where 0 indicates low risk', () => {
         const rule = firewall.createRule(`
             cf.threat_score < 50

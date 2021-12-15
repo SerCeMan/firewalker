@@ -221,8 +221,9 @@ export class Firewall {
         addStrArray(wirefilter, scheme, 'http.request.body.form.names');
         addStrArray(wirefilter, scheme, 'http.request.body.form.values');
         // Dynamic fields
-        addBoolen(wirefilter, scheme, 'cf.bot_management.verified_bot');
+        addString(wirefilter, scheme, 'cf.bot_management.ja3_hash');
         addNumber(wirefilter, scheme, 'cf.bot_management.score');
+        addBoolen(wirefilter, scheme, 'cf.bot_management.verified_bot');
         addNumber(wirefilter, scheme, 'cf.threat_score');
         addNumber(wirefilter, scheme, 'cf.edge.server_port');
         addBoolen(wirefilter, scheme, 'cf.client.bot');
@@ -257,8 +258,9 @@ export type CfRequestExt = Readonly<{
     'ip.geoip.is_in_european_union'?: boolean;
     'http.request.headers.truncated'?: boolean;
     'http.request.body.truncated'?: boolean;
-    'cf.bot_management.verified_bot'?: boolean;
     'cf.bot_management.score'?: number;
+    'cf.bot_management.ja3_hash'?: string;
+    'cf.bot_management.verified_bot'?: boolean;
     'cf.client_trust_score'?: number;
     'cf.threat_score'?: number;
     'cf.client.bot'?: boolean;
@@ -368,8 +370,9 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addStrArrayCtx(exec_ctx, 'http.request.body.form.names', [...bodyParams.keys()]);
         this.addStrArrayCtx(exec_ctx, 'http.request.body.form.values', ([] as string[]).concat(...bodyParams.values()));
         // Dynamic fields
-        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.verified_bot', req.cf['cf.bot_management.verified_bot'] ?? false);
+        this.addStringToCtx(exec_ctx, 'cf.bot_management.ja3_hash', req.cf['cf.bot_management.ja3_hash'] ?? '');
         this.addNumberToCtx(exec_ctx, 'cf.bot_management.score', req.cf['cf.bot_management.score'] ?? 100);
+        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.verified_bot', req.cf['cf.bot_management.verified_bot'] ?? false);
         this.addNumberToCtx(exec_ctx, 'cf.client_trust_score', req.cf['cf.client_trust_score'] ?? 100);
         this.addNumberToCtx(exec_ctx, 'cf.threat_score', req.cf['cf.threat_score'] ?? 100);
         this.addNumberToCtx(exec_ctx, 'cf.edge.server_port', parsePort(req));
