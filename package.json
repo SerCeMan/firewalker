@@ -1,7 +1,7 @@
 {
   "name": "firewalker",
   "license": "MIT",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "homepage": "https://github.com/SerCeMan/firewalker",
   "repository": "github:SerCeMan/firewalker",
   "main": "dist/index.js",
