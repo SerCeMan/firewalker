@@ -35,12 +35,12 @@
     "typescript": "^3.9.3"
   },
   "dependencies": {
-    "ffi-napi": "^2.5.0",
+    "ffi-napi": "^4.0.3",
     "ip-address": "^6.3.0",
     "node-fetch": "^2.6.7",
-    "ref-array-di": "^1.2.1",
-    "ref-napi": "^2.0.0",
-    "ref-struct-di": "^1.1.0",
+    "ref-array-di": "^1.2.2",
+    "ref-napi": "^3.0.3",
+    "ref-struct-di": "^1.1.1",
     "ref-union-di": "^1.0.1"
   },
   "engines": {
