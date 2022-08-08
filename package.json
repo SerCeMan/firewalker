@@ -2,7 +2,7 @@
   "name": "@tamkelvin313/firewalker",
   "license": "MIT",
   "description": "The clone of [SerCeMan/firewalker](https://github.com/SerCeMan/firewalker), with adding apple silicon support.",
-  "version": "1.0.3.1",
+  "version": "1.0.4",
   "homepage": "https://github.com/tamkelvin313/firewalker",
   "repository": "github:tamkelvin313/firewalker",
   "main": "dist/index.js",
