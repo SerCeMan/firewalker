@@ -174,6 +174,9 @@ export class Firewall {
         switch (process.platform) {
             case 'darwin':
                 libPath = path.join(__dirname, '..', 'lib', 'libwirefilter_ffi.dylib');
+                if (process.arch == 'arm64'){
+                    libPath = path.join(__dirname, '..', 'lib', 'libwirefilter_ffi_aarch64.dylib');
+                }
                 break;
             case 'linux':
                 libPath = path.join(__dirname, '..', 'lib', 'libwirefilter_ffi.so');

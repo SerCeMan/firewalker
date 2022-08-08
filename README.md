@@ -1,68 +1,17 @@
-![](https://github.com/SerCeMan/firewalker/raw/master/logo/logo.png)
+[![npm version](https://badge.fury.io/js/firewalker.svg)](https://www.npmjs.com/package/@tamkelvin313/firewalker)
 
-[![Build Status](https://travis-ci.org/SerCeMan/firewalker.svg?branch=master)](https://travis-ci.org/SerCeMan/firewalker)
-[![Codecov](https://codecov.io/gh/SerCeMan/firewalker/branch/master/graph/badge.svg)](https://codecov.io/gh/SerCeMan/firewalker)
-[![npm version](https://badge.fury.io/js/firewalker.svg)](https://www.npmjs.com/package/firewalker)
+The clone of [SerCeMan/firewalker](https://github.com/SerCeMan/firewalker), with adding apple silicon support. For the document please reference the orginal repo.
 
+# Apple Silcon (M1) support issue for npm plugin `firewalker`
 
-A framework for executing and testing Cloudflare Firewall rules locally.
+The npm package `firewalker` depends on binary build of [`wirefilter`](https://github.com/cloudflare/wirefilter) to run and execute the firewall rules to perform js based unit test. However,the binary build inside the npm package is `x86` based, not support with apple silcon machine, bring some troublesome during development.
 
-```typescript
-const firewall = new Firewall()
-const rule = firewall.createRule(`
-    http.host eq "www.example.org"
-`)
+The following is the guideline to resolve the problem and this plugin is only the clone with below modification
 
-rule.match(new Request('http://www.example.org')) // -> true
-rule.match(new Request('http://www.example.com')) // -> false
+- Clone the following repo `https://github.com/cloudflare/wirefilter` with commit [2334ab150](https://github.com/cloudflare/wirefilter/commit/2334ab150abd803a555b1541a7e44891b7f5cc60).
+- Apply the patch file at npm package [`SerCeMan/firewalker/blob/master/lib/wirefilter.patch`](https://github.com/SerCeMan/firewalker/blob/master/lib/wirefilter.patch)
+- Build the `wirefilter` with `aarch64-apple-darwin` architecture. 
 ```
-
-See more [examples](https://github.com/SerCeMan/firewalker/blob/master/test/firewall.tests.ts).
-
-## Motivation
-
-It's easy to treat firewall rules as plain configuration. It's incredibly easy to manage a couple of rules that look like.
+cargo build --release --target aarch64-apple-darwin
 ```
-http.host eq "www.example.org" 
-```
-
-And end up with a rule that looks more like. 
-```wireshark
-http.host matches "(www|api)\.example\.org"
-and not lower(http.request.uri.path) matches "/(auth|login|logut).*"
-and (
-  any(http.request.uri.args.names[*] == "token") or
-  ip.src in { 93.184.216.34 62.122.170.171 }
-)
-or cf.threat_score lt 10
-``` 
-
-Over time, the number of rules and their complexity grows. Manually testing rules like the above is error-prone as humans are known to make mistakes. After a few steps up in complexity, it becomes apparent that firewall rules are code, and need to be treated as code. They need to be stored in a source code repository, managed with a tool like Terraform, and the changes need to be tested on CI. 
-
-Here is where Firewalker comes into play allowing you to write unit tests to ensure that a change to the path regex isn't going to block all of the traffic to your site or cancel out the effect of the rule completely. For instance, for the rule above, you can define multiple assertions with jest.
-
-```typescript
-const rule = firewall.createRule(/* */)
-
-expect(rule.match(new Request('http://www.example.org'))).toBeFalsy()
-expect(rule.match(new Request('http://www.example.org?token=abc'))).toBeTruthy()
-expect(rule.match(new Request('http://www.example.org/login/user?token=abc'))).toBeFalsy()
-expect(rule.match(new Request('http://www.example.org/login/user?token=abc', {
-    cf: {'cf.threat_score': 5}
-}))).toBeTruthy();
-// etc
-```
-
-Firewalker builds on top of Cloudflare's [wirefilter](https://github.com/cloudflare/wirefilter) rule engine and provides API to construct the requests in JS. After all, if the tests for your workers are in JS, why not to use the same syntax for the WAF rules?
-
-## Supported platforms
-Firewalker relies on a binary build [wirefilter](https://github.com/cloudflare/wirefilter) to run and execute the firewall rules. Therefore, only the platforms which binaries were pre-built will be able to run Firewalker. Currently supported platforms are:
-
-* MacOS
-* Linux
-
-## Disclaimer
-The Firewalker project is not officially supported by Cloudflare or affiliated with Cloudflare in any way. While Firewalker tries to preserve the semantics of the Cloudflare WAF rule engine, there will always be some differences, so use it at your own risk as general guidance for local testing rather than the ultimate truth.
-
-## Contribute
-Contributions are always welcome!
+- Copy the birary file compiled at last step `wirefilter/target/aarch64-apple-darwin/release/libwirefilter_ffi.dylib` to replace the `node_modules/firewalker/lib/libwirefilter_ffi.dylib`
