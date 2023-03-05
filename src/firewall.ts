@@ -171,9 +171,14 @@ export class Firewall {
 
     constructor() {
         let libPath: string;
+        let libName: string;
         switch (process.platform) {
             case 'darwin':
-                libPath = path.join(__dirname, '..', 'lib', 'libwirefilter_ffi.dylib');
+                libName = 'libwirefilter_ffi';
+                if (process.arch == 'arm64'){
+                    libName += '_aarch64';
+                }
+                libPath = path.join(__dirname, '..', 'lib', `${libName}.dylib`);
                 break;
             case 'linux':
                 libPath = path.join(__dirname, '..', 'lib', 'libwirefilter_ffi.so');
