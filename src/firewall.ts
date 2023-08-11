@@ -226,9 +226,12 @@ export class Firewall {
         addStrArray(wirefilter, scheme, 'http.request.body.form.names');
         addStrArray(wirefilter, scheme, 'http.request.body.form.values');
         // Dynamic fields
+        addBoolen(wirefilter, scheme, 'cf.bot_management.corporate_proxy');
         addString(wirefilter, scheme, 'cf.bot_management.ja3_hash');
         addNumber(wirefilter, scheme, 'cf.bot_management.score');
+        addBoolen(wirefilter, scheme, 'cf.bot_management.static_resource');
         addBoolen(wirefilter, scheme, 'cf.bot_management.verified_bot');
+        addBoolen(wirefilter, scheme, 'cf.bot_management.js_detection.passed');
         addNumber(wirefilter, scheme, 'cf.threat_score');
         addNumber(wirefilter, scheme, 'cf.edge.server_port');
         addBoolen(wirefilter, scheme, 'cf.client.bot');
