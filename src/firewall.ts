@@ -229,6 +229,7 @@ export class Firewall {
         addString(wirefilter, scheme, 'cf.bot_management.ja3_hash');
         addNumber(wirefilter, scheme, 'cf.bot_management.score');
         addBoolen(wirefilter, scheme, 'cf.bot_management.verified_bot');
+        addBoolen(wirefilter, scheme, 'cf.bot_management.corporate_proxy');
         addNumber(wirefilter, scheme, 'cf.threat_score');
         addNumber(wirefilter, scheme, 'cf.edge.server_port');
         addBoolen(wirefilter, scheme, 'cf.client.bot');
@@ -266,6 +267,7 @@ export type CfRequestExt = Readonly<{
     'cf.bot_management.score'?: number;
     'cf.bot_management.ja3_hash'?: string;
     'cf.bot_management.verified_bot'?: boolean;
+    'cf.bot_management.corporate_proxy'?: boolean;
     'cf.client_trust_score'?: number;
     'cf.threat_score'?: number;
     'cf.client.bot'?: boolean;
@@ -378,6 +380,7 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addStringToCtx(exec_ctx, 'cf.bot_management.ja3_hash', req.cf['cf.bot_management.ja3_hash'] ?? '');
         this.addNumberToCtx(exec_ctx, 'cf.bot_management.score', req.cf['cf.bot_management.score'] ?? 100);
         this.addBoolenToCtx(exec_ctx, 'cf.bot_management.verified_bot', req.cf['cf.bot_management.verified_bot'] ?? false);
+        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.corporate_proxy', req.cf['cf.bot_management.corporate_proxy'] ?? false);
         this.addNumberToCtx(exec_ctx, 'cf.client_trust_score', req.cf['cf.client_trust_score'] ?? 100);
         this.addNumberToCtx(exec_ctx, 'cf.threat_score', req.cf['cf.threat_score'] ?? 100);
         this.addNumberToCtx(exec_ctx, 'cf.edge.server_port', parsePort(req));

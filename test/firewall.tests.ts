@@ -415,6 +415,18 @@ describe('Dynamic fields', () => {
         }))).toBeTruthy();
     });
 
+    it('should match the request originates from a corporate proxy', () => {
+        const rule = firewall.createRule(`
+            cf.bot_management.corporate_proxy
+        `);
+
+        expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+        expect(rule.match(new Request('https://example.org', {
+            cf: {'cf.bot_management.corporate_proxy': true}
+        }))).toBeTruthy();
+    });
+
+
     it('should match the request with a known JA3 hash', () => {
         const rule = firewall.createRule(`
             cf.bot_management.ja3_hash == "388a2f0ab9bd102d45826cc2af4e183a"
