@@ -12,12 +12,12 @@ describe('Standard fields', () => {
 
     it('should match the entire cookie as a string', () => {
         const rule = firewall.createRule(`
-            http.cookie != "gingersnaps=true"
+            http.cookie != "gingersnaps"
         `);
 
         expect(rule.match(new Request('http://example.org'))).toBeTruthy();
         expect(rule.match(new Request('http://example.org', {
-            headers: [['Cookie', 'gingersnaps=true']]
+            headers: [['Cookie', 'gingersnaps']]
         }))).toBeFalsy();
         expect(rule.match(new Request('http://example.org', {
             headers: [['Cookie', 'oatmeal=false']]
