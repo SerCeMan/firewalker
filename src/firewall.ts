@@ -334,7 +334,7 @@ function extractIpInfo(cf: CfRequestExt): IpInfo {
     'ip.src.subdivision_1_iso_code': cf['ip.src.subdivision_1_iso_code'] ?? cf['ip.geoip.subdivision_1_iso_code'],
     'ip.src.subdivision_2_iso_code': cf['ip.src.subdivision_2_iso_code'] ?? cf['ip.geoip.subdivision_2_iso_code'],
     'ip.src.is_in_european_union': cf['ip.src.is_in_european_union'] ?? cf['ip.geoip.is_in_european_union'],
-  }
+  };
 }
 
 type IpInfo = Readonly<{
@@ -481,7 +481,7 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addNumberToCtx(exec_ctx, 'http.request.version', req.cf['http.request.version'] ?? 1);
         this.addStringToCtx(exec_ctx, 'http.x_forwarded_for', req.headers.get('X-Forwarded-For') ?? '');
         // handle duplicated fields for ip info
-        const ipInfo = extractIpInfo(req.cf)
+        const ipInfo = extractIpInfo(req.cf);
         this.addIpAddrToCtx(exec_ctx, 'ip.src', ipInfo['ip.src'] ?? '0.0.0.0');
         this.addStringToCtx(exec_ctx, 'ip.src.lat', ipInfo['ip.src.lat'] ?? '');
         this.addStringToCtx(exec_ctx, 'ip.src.lon', ipInfo['ip.src.lon'] ?? '');
