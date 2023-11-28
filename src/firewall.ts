@@ -383,7 +383,7 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addNumberToCtx(exec_ctx, 'cf.edge.server_port', parsePort(req));
         this.addBoolenToCtx(exec_ctx, 'cf.client.bot', req.cf['cf.client.bot'] ?? false);
         // IP Lists
-        checkAdded(this.wirefilter.set_nevermatch_iplist(exec_ctx), 'can\'t add nevermatch list');
+        checkAdded(this.wirefilter.set_all_lists_to_nevermatch(exec_ctx), 'can\'t add nevermatch list');
         try {
             const matchResult = wirefilter.wirefilter_match(this.filter, exec_ctx);
             if (matchResult.ok.success != 1) {
