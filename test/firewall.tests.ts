@@ -832,4 +832,23 @@ describe('IP Lists', () => {
             cf: {'ip.src': '1.2.3.4'}
         }))).toBeFalsy();
     });
+
+    it('an ASN is not in an ASN list', () => {
+        const rule = firewall.createRule(`
+            (ip.geoip.asnum in $office_asns)
+        `);
+
+        expect(rule.match(new Request('http://example.org', {
+            cf: {'ip.geoip.asnum': 1234}
+        }))).toBeFalsy();
+    });
+
+    it('a host is not in the list of production hosts', () => {
+        const rule = firewall.createRule(`
+            (http.host in $production_hosts)
+        `);
+
+        expect(rule.match(new Request('http://example.org'))).toBeFalsy();
+    });
+
 });

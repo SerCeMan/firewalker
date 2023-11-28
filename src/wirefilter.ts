@@ -884,7 +884,7 @@ lib.add_standard_functions = [ref.types.void, [
     ref.refType(wirefilter_scheme_t)
 ]];
 
-lib.set_nevermatch_iplist = [ref.types.bool, [
+lib.set_all_lists_to_nevermatch = [ref.types.bool, [
     ref.refType(wirefilter_execution_context_t)
 ]];
 

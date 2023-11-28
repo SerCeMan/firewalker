@@ -547,7 +547,7 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addStringToCtx(exec_ctx, 'cf.waf.score.class', req.cf['cf.waf.score.class'] ?? '');
         this.addStringToCtx(exec_ctx, 'cf.worker.upstream_zone', req.cf['cf.worker.upstream_zone'] ?? '');
         // IP Lists
-        checkAdded(this.wirefilter.set_nevermatch_iplist(exec_ctx), 'can\'t add nevermatch list');
+        checkAdded(this.wirefilter.set_all_lists_to_nevermatch(exec_ctx), 'can\'t add nevermatch list');
         try {
             const matchResult = wirefilter.wirefilter_match(this.filter, exec_ctx);
             if (matchResult.ok.success != 1) {
