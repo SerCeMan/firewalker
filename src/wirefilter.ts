@@ -732,7 +732,7 @@ lib.wirefilter_add_ipv4_value_to_array = [ref.types.bool, [
 //     bool value
 // );
 
-lib.wirefilter_add_ipv4_value_to_array = [ref.types.bool, [
+lib.wirefilter_add_bool_value_to_array = [ref.types.bool, [
     ref.refType(wirefilter_array_t),
     ref.types.uint32,
     ref.types.bool,
@@ -886,6 +886,16 @@ lib.add_standard_functions = [ref.types.void, [
 
 lib.set_all_lists_to_nevermatch = [ref.types.bool, [
     ref.refType(wirefilter_execution_context_t)
+]];
+
+lib.wirefilter_setup_int_lists = [ref.types.void, [
+    ref.refType(wirefilter_execution_context_t),
+    ref.refType(wirefilter_map_t),
+]];
+
+lib.wirefilter_setup_ip_lists = [ref.types.void, [
+    ref.refType(wirefilter_execution_context_t),
+    ref.refType(wirefilter_map_t),
 ]];
 
 // patch ended

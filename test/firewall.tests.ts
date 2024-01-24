@@ -177,16 +177,16 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.src': '93.184.216.34'}
+            cf: { 'ip.src': '93.184.216.34' }
         }))).toBeTruthy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.src': '1.2.3.4'}
+            cf: { 'ip.src': '1.2.3.4' }
         }))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.src': '2001:0db8:85a3:0000:0000:8a2e:0370:7334'}
+            cf: { 'ip.src': '2001:0db8:85a3:0000:0000:8a2e:0370:7334' }
         }))).toBeTruthy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.src': 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'}
+            cf: { 'ip.src': 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff' }
         }))).toBeFalsy();
     });
 
@@ -274,7 +274,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.geoip.asnum': 1234}
+            cf: { 'ip.geoip.asnum': 1234 }
         }))).toBeTruthy();
     });
 
@@ -285,7 +285,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.geoip.continent': 'EU'}
+            cf: { 'ip.geoip.continent': 'EU' }
         }))).toBeTruthy();
     });
 
@@ -296,7 +296,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.geoip.country': 'RU'}
+            cf: { 'ip.geoip.country': 'RU' }
         }))).toBeTruthy();
     });
 
@@ -308,7 +308,7 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.geoip.subdivision_1_iso_code': 'GB-ENG'}
+            cf: { 'ip.geoip.subdivision_1_iso_code': 'GB-ENG' }
         }))).toBeTruthy();
     });
 
@@ -320,19 +320,19 @@ describe('Standard fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.geoip.subdivision_2_iso_code': 'GB-SWK'}
+            cf: { 'ip.geoip.subdivision_2_iso_code': 'GB-SWK' }
         }))).toBeTruthy();
     });
 
     it('should match when the request originates from an EU country', () => {
         const rule = firewall.createRule(`
-            ip.geoip.is_in_european_union && 
+            ip.geoip.is_in_european_union &&
             ip.src.is_in_european_union
         `);
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'ip.geoip.is_in_european_union': true}
+            cf: { 'ip.geoip.is_in_european_union': true }
         }))).toBeTruthy();
     });
 
@@ -431,7 +431,7 @@ describe('Header fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'http.request.headers.truncated': true}
+            cf: { 'http.request.headers.truncated': true }
         }))).toBeTruthy();
     });
 });
@@ -451,7 +451,7 @@ describe('Body fields', () => {
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
             method: 'POST',
-            body: JSON.stringify({example: 'payload'})
+            body: JSON.stringify({ example: 'payload' })
         }))).toBeTruthy();
     });
 
@@ -462,7 +462,7 @@ describe('Body fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'http.request.body.truncated': true}
+            cf: { 'http.request.body.truncated': true }
         }))).toBeTruthy();
     });
 
@@ -495,7 +495,7 @@ describe('Body fields', () => {
 
     it('should match the names of form fields in the HTTP request', () => {
         const rule = firewall.createRule(`
-            http.request.body.form.names[0] == "email" and 
+            http.request.body.form.names[0] == "email" and
             http.request.body.form.names[1] == "username"
         `);
 
@@ -547,7 +547,7 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'cf.bot_management.verified_bot': true}
+            cf: { 'cf.bot_management.verified_bot': true }
         }))).toBeTruthy();
     });
 
@@ -558,7 +558,7 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'cf.bot_management.corporate_proxy': true}
+            cf: { 'cf.bot_management.corporate_proxy': true }
         }))).toBeTruthy();
     });
 
@@ -569,7 +569,7 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'cf.bot_management.ja3_hash': '388a2f0ab9bd102d45826cc2af4e183a'}
+            cf: { 'cf.bot_management.ja3_hash': '388a2f0ab9bd102d45826cc2af4e183a' }
         }))).toBeTruthy();
     });
 
@@ -615,10 +615,10 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'cf.threat_score': 0}
+            cf: { 'cf.threat_score': 0 }
         }))).toBeTruthy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'cf.threat_score': 20}
+            cf: { 'cf.threat_score': 20 }
         }))).toBeTruthy();
     });
 
@@ -629,7 +629,7 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'cf.bot_management.score': 20}
+            cf: { 'cf.bot_management.score': 20 }
         }))).toBeTruthy();
     });
 
@@ -646,7 +646,7 @@ describe('Dynamic fields', () => {
 
     it('should match the port number at which Cloudflare\'s network received the request.', () => {
         const rule = firewall.createRule(`
-            cf.edge.server_port == 22 or 
+            cf.edge.server_port == 22 or
             cf.edge.server_port == 443
         `);
 
@@ -662,7 +662,7 @@ describe('Dynamic fields', () => {
 
         expect(rule.match(new Request('https://example.org'))).toBeFalsy();
         expect(rule.match(new Request('https://example.org', {
-            cf: {'cf.client.bot': true}
+            cf: { 'cf.client.bot': true }
         }))).toBeTruthy();
     });
 
@@ -741,7 +741,7 @@ describe('Dynamic fields', () => {
             cf: { 'cf.worker.upstream_zone': 'example.com' },
         }))).toBeTruthy();
     });
-    });
+});
 
 describe('Transformation function', () => {
     let firewall: Firewall;
@@ -816,8 +816,16 @@ describe('Transformation function', () => {
     });
 });
 
-describe('IP Lists', () => {
+describe('Lists', () => {
     let firewall: Firewall;
+    const lists = {
+        int: {
+            office_asns: [2345]
+        },
+        ip: {
+            office_network: ['10.0.0.1'],
+        }
+    };
 
     beforeEach(() => {
         firewall = new Firewall();
@@ -826,27 +834,48 @@ describe('IP Lists', () => {
     it('an IP is not in an IP list', () => {
         const rule = firewall.createRule(`
             (ip.src in $office_network)
-        `);
+        `, lists);
 
         expect(rule.match(new Request('http://example.org', {
-            cf: {'ip.src': '1.2.3.4'}
+            cf: { 'ip.src': '1.2.3.4' }
         }))).toBeFalsy();
+    });
+
+
+    it('an IP is in an IP list', () => {
+        const rule = firewall.createRule(`
+            (ip.src in $office_network)
+        `, lists);
+
+        expect(rule.match(new Request('http://example.org', {
+            cf: { 'ip.src': '10.0.0.1' }
+        }))).toBeTruthy();
     });
 
     it('an ASN is not in an ASN list', () => {
         const rule = firewall.createRule(`
             (ip.geoip.asnum in $office_asns)
-        `);
+        `, lists);
 
         expect(rule.match(new Request('http://example.org', {
-            cf: {'ip.geoip.asnum': 1234}
+            cf: { 'ip.geoip.asnum': 1234 }
         }))).toBeFalsy();
+    });
+
+    it('an ASN is in an ASN list', () => {
+        const rule = firewall.createRule(`
+            (ip.geoip.asnum in $office_asns)
+        `, lists);
+
+        expect(rule.match(new Request('http://example.org', {
+            cf: { 'ip.geoip.asnum': 2345 }
+        }))).toBeTruthy();
     });
 
     it('a host is not in the list of production hosts', () => {
         const rule = firewall.createRule(`
             (http.host in $production_hosts)
-        `);
+        `, lists);
 
         expect(rule.match(new Request('http://example.org'))).toBeFalsy();
     });

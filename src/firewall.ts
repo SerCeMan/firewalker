@@ -8,8 +8,8 @@ import {
     WIREFILTER_TYPE_INT,
     WIREFILTER_TYPE_IP
 } from './wirefilter';
-import {Headers, Request as FetchRequest, RequestInfo, RequestInit} from 'node-fetch';
-import {Address4, Address6} from 'ip-address';
+import { Headers, Request as FetchRequest, RequestInfo, RequestInit } from 'node-fetch';
+import { Address4, Address6 } from 'ip-address';
 import * as path from 'path';
 
 function wirefilterString(s: string) {
@@ -66,14 +66,6 @@ function addNumArray(wirefilter: any, scheme: any, name: string) {
         scheme,
         wirefilterString(name),
         wirefilter.wirefilter_create_array_type(WIREFILTER_TYPE_INT)
-    ), `Failed to add ${name} to the scheme`);
-}
-
-function addIPList(wirefilter: any, scheme: any, name: string) {
-    checkAdded(wirefilter.wirefilter_add_type_list_to_scheme(
-        scheme,
-        WIREFILTER_TYPE_IP,
-        wirefilter.wirefilter_create_never_list()
     ), `Failed to add ${name} to the scheme`);
 }
 
@@ -143,13 +135,13 @@ function paramsToMap(params: string): Map<string, string[]> {
 function parseExtension(path: string): string {
     const lastSegment = path.split('/').pop() ?? '';
     const index = lastSegment.lastIndexOf('.');
-    if (index === -1 || index === 0 || index === lastSegment.length-1) {
+    if (index === -1 || index === 0 || index === lastSegment.length - 1) {
         // no extension
         // Single dot is the first char
         // No trailing characters
         return '';
     }
-    return lastSegment.substr(index+1).toLowerCase();
+    return lastSegment.substr(index + 1).toLowerCase();
 }
 
 function paramNamesToArray(params: string): string[] {
@@ -181,7 +173,7 @@ function headersToMap(headers: Headers): Map<string, string[]> {
     return map;
 }
 
-function cookiesToMap(cookieString: string): Map<string,string[]> {
+function cookiesToMap(cookieString: string): Map<string, string[]> {
     const map = new Map<string, string[]>();
     cookieString.split(';').map(v => v.split('=')).forEach(val => {
         // Skip invalid cookies
@@ -214,7 +206,7 @@ export class Firewall {
         switch (process.platform) {
             case 'darwin':
                 libName = 'libwirefilter_ffi';
-                if (process.arch == 'arm64'){
+                if (process.arch == 'arm64') {
                     libName += '_aarch64';
                 }
                 libPath = path.join(__dirname, '..', 'lib', `${libName}.dylib`);
@@ -301,7 +293,6 @@ export class Firewall {
         addNumber(wirefilter, scheme, 'cf.waf.score.rce');
         addString(wirefilter, scheme, 'cf.waf.score.class');
         addString(wirefilter, scheme, 'cf.worker.upstream_zone');
-        addIPList(wirefilter, scheme, 'any?');
         this.wirefilter = wirefilter;
         this.scheme = scheme;
     }
@@ -311,30 +302,30 @@ export class Firewall {
      *
      * @param rule waf language expression
      */
-    createRule(rule: string): FirewallRule {
-        return new WirefilterFirewallRule(this.wirefilter, this.scheme, rule);
+    createRule(rule: string, lists: Lists = {}): FirewallRule {
+        return new WirefilterFirewallRule(this.wirefilter, this.scheme, rule, lists);
     }
 }
 
 // Allows either of the supported fields to be provided but prefer ip.src namespace
 function extractIpInfo(cf: CfRequestExt): IpInfo {
-  return {
-    'ip.src': cf['ip.src'],
-    'ip.src.lat': cf['ip.src.lat'],
-    'ip.src.lon': cf['ip.src.lon'],
-    'ip.src.city': cf['ip.src.city'],
-    'ip.src.postal_code': cf['ip.src.postal_code'],
-    'ip.src.metro_code': cf['ip.src.metro_code'],
-    'ip.src.region': cf['ip.src.region'],
-    'ip.src.region_code': cf['ip.src.region_code'],
-    'ip.src.timezone.name': cf['ip.src.timezone.name'],
-    'ip.src.asnum': cf['ip.src.asnum'] ?? cf['ip.geoip.asnum'],
-    'ip.src.continent': cf['ip.src.continent'] ?? cf['ip.geoip.continent'],
-    'ip.src.country': cf['ip.src.country'] ?? cf['ip.geoip.country'],
-    'ip.src.subdivision_1_iso_code': cf['ip.src.subdivision_1_iso_code'] ?? cf['ip.geoip.subdivision_1_iso_code'],
-    'ip.src.subdivision_2_iso_code': cf['ip.src.subdivision_2_iso_code'] ?? cf['ip.geoip.subdivision_2_iso_code'],
-    'ip.src.is_in_european_union': cf['ip.src.is_in_european_union'] ?? cf['ip.geoip.is_in_european_union'],
-  };
+    return {
+        'ip.src': cf['ip.src'],
+        'ip.src.lat': cf['ip.src.lat'],
+        'ip.src.lon': cf['ip.src.lon'],
+        'ip.src.city': cf['ip.src.city'],
+        'ip.src.postal_code': cf['ip.src.postal_code'],
+        'ip.src.metro_code': cf['ip.src.metro_code'],
+        'ip.src.region': cf['ip.src.region'],
+        'ip.src.region_code': cf['ip.src.region_code'],
+        'ip.src.timezone.name': cf['ip.src.timezone.name'],
+        'ip.src.asnum': cf['ip.src.asnum'] ?? cf['ip.geoip.asnum'],
+        'ip.src.continent': cf['ip.src.continent'] ?? cf['ip.geoip.continent'],
+        'ip.src.country': cf['ip.src.country'] ?? cf['ip.geoip.country'],
+        'ip.src.subdivision_1_iso_code': cf['ip.src.subdivision_1_iso_code'] ?? cf['ip.geoip.subdivision_1_iso_code'],
+        'ip.src.subdivision_2_iso_code': cf['ip.src.subdivision_2_iso_code'] ?? cf['ip.geoip.subdivision_2_iso_code'],
+        'ip.src.is_in_european_union': cf['ip.src.is_in_european_union'] ?? cf['ip.geoip.is_in_european_union'],
+    };
 }
 
 type IpInfo = Readonly<{
@@ -386,9 +377,9 @@ export type CfRequestExt = Readonly<{
     'http.request.body.truncated'?: boolean;
     'cf.bot_management.score'?: number;
     'cf.bot_management.ja3_hash'?: string;
-    'cf.bot_management.js_detection.passed'? : boolean;
-    'cf.bot_management.detection_ids'? : number[];
-    'cf.bot_management.static_resource'? : boolean;
+    'cf.bot_management.js_detection.passed'?: boolean;
+    'cf.bot_management.detection_ids'?: number[];
+    'cf.bot_management.static_resource'?: boolean;
     'cf.bot_management.verified_bot'?: boolean;
     'cf.bot_management.corporate_proxy'?: boolean;
     'cf.client_trust_score'?: number;
@@ -439,6 +430,11 @@ export interface FirewallRule {
     match(req: Request): boolean;
 }
 
+type Lists = {
+    int?: Record<string, number[]>
+    ip?: Record<string, string[]>
+}
+
 class WirefilterFirewallRule implements FirewallRule {
     private readonly filter: any;
 
@@ -446,6 +442,7 @@ class WirefilterFirewallRule implements FirewallRule {
         private readonly wirefilter: any, //
         private readonly scheme: any, //
         private readonly rule: string, //
+        private readonly lists: Lists = {}, //
     ) {
         const parsingResult = wirefilter.wirefilter_parse_filter(
             scheme,
@@ -548,6 +545,8 @@ class WirefilterFirewallRule implements FirewallRule {
         this.addStringToCtx(exec_ctx, 'cf.worker.upstream_zone', req.cf['cf.worker.upstream_zone'] ?? '');
         // IP Lists
         checkAdded(this.wirefilter.set_all_lists_to_nevermatch(exec_ctx), 'can\'t add nevermatch list');
+        this.setupIntLists(exec_ctx, this.lists.int);
+        this.setupIpLists(exec_ctx, this.lists.ip);
         try {
             const matchResult = wirefilter.wirefilter_match(this.filter, exec_ctx);
             if (matchResult.ok.success != 1) {
@@ -584,22 +583,20 @@ class WirefilterFirewallRule implements FirewallRule {
     }
 
     private addIpAddrToCtx(execCtx: any, name: string, value: string) {
-        if (value.indexOf('.') != -1) {
-            const ipv4 = new Address4(value).toArray();
+        const result = parseIp(value);
+
+        if (result.type === 'v4') {
             checkAdded(this.wirefilter.wirefilter_add_ipv4_value_to_execution_context(
                 execCtx,
                 wirefilterString(name),
-                ipv4,
+                result.ip,
             ), `Failed to add ${name}=${value} to the context`);
-        } else if (value.indexOf(':') != -1) {
-            const ipv6 = new Address6(value).toUnsignedByteArray();
+        } else { // ipv6
             checkAdded(this.wirefilter.wirefilter_add_ipv6_value_to_execution_context(
                 execCtx,
                 wirefilterString(name),
-                ipv6,
+                result.ip,
             ), `Failed to add ${name}=${value} to the context`);
-        } else {
-            throw new Error(`Can't parse IP address: ${value}`);
         }
     }
 
@@ -659,4 +656,66 @@ class WirefilterFirewallRule implements FirewallRule {
             arr,
         ), `Failed to add ${name}=${JSON.stringify(value)} to the context`);
     }
+
+    private setupIntLists(execCtx: any, list: Lists['int']) {
+        const map = this.buildList(WIREFILTER_TYPE_INT, list, (arr, i, value) => {
+            checkAdded(
+                this.wirefilter.wirefilter_add_int_value_to_array(arr, i, value),
+                `Failed to add ${value} to array`
+            );
+        });
+        this.wirefilter.wirefilter_setup_int_lists(execCtx, map);
+    }
+
+    private setupIpLists(execCtx: any, list: Lists['ip']) {
+        const map = this.buildList(WIREFILTER_TYPE_IP, list, (arr, i, value) => {
+            const result = parseIp(value);
+            switch (result.type) {
+                case 'v4': {
+                    checkAdded(
+                        this.wirefilter.wirefilter_add_ipv4_value_to_array(arr, i, result.ip),
+                        `Failed to add ${value} to array`
+                    );
+                    break;
+                }
+                case 'v6': {
+                    checkAdded(
+                        this.wirefilter.wirefilter_add_ipv6_value_to_array(arr, i, result.ip),
+                        `Failed to add ${value} to array`
+                    );
+                    break;
+                }
+            }
+        });
+        this.wirefilter.wirefilter_setup_ip_lists(execCtx, map);
+    }
+
+    private buildList<T>(type: any, list: Record<string, T[]> | undefined, addToArray: (wirefilterArray: any, index: number, value: T) => void) {
+        const arrType = this.wirefilter.wirefilter_create_array_type(type);
+        const map = this.wirefilter.wirefilter_create_map(arrType);
+        for (const [key, values] of Object.entries(list || {})) {
+            const arr = this.wirefilter.wirefilter_create_array(type);
+            values.forEach((value, i) => {
+                addToArray(arr, i, value);
+            });
+            this.wirefilter.wirefilter_add_array_value_to_map(map, wirefilterString(key), arr);
+        }
+        return map;
+    }
 }
+
+type IPParseResult =
+    | { type: 'v4', ip: number[] }
+    | { type: 'v6', ip: number[] }
+
+const parseIp = (value: string): IPParseResult => {
+    if (value.indexOf('.') != -1) {
+        const ipv4 = new Address4(value).toArray();
+        return { type: 'v4', ip: ipv4 };
+    } else if (value.indexOf(':') != -1) {
+        const ipv6 = new Address6(value).toUnsignedByteArray();
+        return { type: 'v6', ip: ipv6 };
+    } else {
+        throw new Error(`Unable to parse ip address '${value}'`);
+    }
+};
