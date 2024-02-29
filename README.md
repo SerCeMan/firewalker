@@ -61,6 +61,18 @@ Firewalker relies on a binary build [wirefilter](https://github.com/cloudflare/w
 * MacOS
 * Linux
 
+## Installation
+
+Firewalker uses Yarn as dependency manager, run the command below to install the dependencies.
+
+```
+yarn install
+```
+
+## Run Test
+
+Create your new `.ts` test case or modify the `firewall.tests.ts` in `/test` . To run the test cases, just run `yarn run test` command in the root directory.
+
 ## Disclaimer
 The Firewalker project is not officially supported by Cloudflare or affiliated with Cloudflare in any way. While Firewalker tries to preserve the semantics of the Cloudflare WAF rule engine, there will always be some differences, so use it at your own risk as general guidance for local testing rather than the ultimate truth.
 
