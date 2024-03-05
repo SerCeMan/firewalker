@@ -191,6 +191,7 @@ function cookiesToMap(cookieString: string): Map<string, string[]> {
     return map;
 }
 
+
 /**
  * Firewall that defines the schema for the rules supported by the Cloudflare WAF language.
  *
@@ -304,6 +305,14 @@ export class Firewall {
      */
     createRule(rule: string, lists: Lists = {}): FirewallRule {
         return new WirefilterFirewallRule(this.wirefilter, this.scheme, rule, lists);
+    }
+
+    /**
+     * Creates a new empty firewall ruleset
+     * @returns ruleset
+     */
+    createRuleSet(): FirewallRuleset {
+        return new FirewallRuleset(this.wirefilter, this.scheme);
     }
 }
 
@@ -460,147 +469,300 @@ class WirefilterFirewallRule implements FirewallRule {
     }
 
     match(req: Request): boolean {
-        const wirefilter = this.wirefilter;
-        const exec_ctx = wirefilter.wirefilter_create_execution_context(this.scheme);
+        const exec_ctx = ExecutionContext.buildFromRequest(this.wirefilter, this.scheme, this.lists, req);
+
+        try {
+            return this.matchUsingContext(exec_ctx);
+        } finally {
+            exec_ctx.free();
+        }
+    }
+
+    matchUsingContext(execCtx: ExecutionContext): boolean {
+        const matchResult = this.wirefilter.wirefilter_match(this.filter, execCtx.internalPointer);
+        if (matchResult.ok.success != 1) {
+            throw Error(`Filter can't be matched: ${matchResult.err.msg.data}`);
+        }
+        return matchResult.ok.value;
+    }
+}
+
+
+type Phase = 'http_ratelimit' | 'http_request_sbfm' | 'http_request_firewall_managed'
+type Product = 'zoneLockdown' | 'uaBlock' | 'bic' | 'hot' | 'securityLevel' | 'rateLimit' | 'waf'
+
+type FirewallAction =
+    | {
+        type: 'skip'
+        ruleset?: 'current'
+        phases?: Phase[]
+        products?: Product[]
+    }
+    | {
+        type: 'block' | 'challenge' | 'managed_challenge' | 'js_challenge' | 'log'
+    }
+
+type Rule = {
+    id: string
+    expression: WirefilterFirewallRule
+    action: FirewallAction
+}
+
+type RulesetMatchResult = {
+    loggedRules: string[]
+    skippedPhases: Set<Phase>
+    skippedProducts: Set<Product>
+    outcome:
+    | {
+        action: | 'allow'
+    }
+    | {
+        id: string
+        action: Exclude<FirewallAction['type'], 'skip' | 'log'>
+    }
+}
+
+export class FirewallRuleset {
+    private defaultLists: Lists = {}
+    private rules: Rule[] = [];
+
+    constructor(private wirefilter: any, private scheme: any) { }
+
+    /**
+     * Sets the lists to be added to the execution context for rule evaluation
+     * @param lists - lists to be added
+     * @returns this for method chaining
+     */
+    setDefaultLists(lists: Lists): this {
+        this.defaultLists = lists;
+        return this;
+    }
+
+    /**
+     * Appends a new rule into the firewall at the end of the chain
+     *
+     * @param rule Object with an id and a WAF language expression
+     */
+    addRule(rule: { id: string, expression: string, action: FirewallAction }): this {
+        this.rules.push({
+            id: rule.id,
+            expression: new WirefilterFirewallRule(this.wirefilter, this.scheme, rule.expression),
+            action: rule.action,
+        });
+        return this;
+    }
+
+    /**
+     * Iterates through the list of rules and returns the matching rule id
+     *
+     * @param request incoming request to be matched against
+     * @returns the provided rule id if a successful match is made, undefined otherwise
+     */
+    matchRequest(request: Request): RulesetMatchResult {
+        const results: RulesetMatchResult = {
+            loggedRules: [],
+            skippedPhases: new Set(),
+            skippedProducts: new Set(),
+            outcome: { action: 'allow' },
+        };
+        const execCtx = ExecutionContext.buildFromRequest(this.wirefilter, this.scheme, this.defaultLists, request);
+        try {
+            ruleLoop: for (const rule of this.rules) {
+                if (!rule.expression.matchUsingContext(execCtx)) continue;
+
+                switch (rule.action.type) {
+                    case 'block':
+                    case 'challenge':
+                    case 'js_challenge':
+                    case 'managed_challenge':
+                        results.outcome = {
+                            id: rule.id,
+                            action: rule.action.type
+                        };
+                        break ruleLoop;
+                    case 'log':
+                        results.loggedRules.push(rule.id);
+                        break;
+                    case 'skip':
+                        if (rule.action.ruleset === 'current') {
+                            break ruleLoop;
+                        }
+                        rule.action.phases?.forEach(phase => results.skippedPhases.add(phase));
+                        rule.action.products?.forEach(product => results.skippedProducts.add(product));
+                        break;
+                    default:
+                        throw new Error(`Unknown action for ${rule.id}: ${rule.action}`);
+
+                }
+            }
+        } finally {
+            execCtx.free();
+        }
+        return results;
+    }
+}
+
+type IPParseResult =
+    | { type: 'v4', ip: number[] }
+    | { type: 'v6', ip: number[] }
+
+const parseIp = (value: string): IPParseResult => {
+    if (value.indexOf('.') != -1) {
+        const ipv4 = new Address4(value).toArray();
+        return { type: 'v4', ip: ipv4 };
+    } else if (value.indexOf(':') != -1) {
+        const ipv6 = new Address6(value).toUnsignedByteArray();
+        return { type: 'v6', ip: ipv6 };
+    } else {
+        throw new Error(`Unable to parse ip address '${value}'`);
+    }
+};
+
+class ExecutionContext {
+    private execCtx: any
+
+    static buildFromRequest(wirefilter: any, scheme: any, lists: Lists, req: Request): ExecutionContext {
+        const exec_ctx = new ExecutionContext(wirefilter, scheme);
         const url = new URL(req.url);
         // Standard fields
-        this.addStringToCtx(exec_ctx, 'http.cookie', req.headers.get('Cookie') ?? '');
-        this.addStringToCtx(exec_ctx, 'http.host', url.hostname);
-        this.addStringToCtx(exec_ctx, 'http.referer', req.headers.get('Referer') ?? '');
-        this.addStringToCtx(exec_ctx, 'http.request.full_uri', req.url);
-        this.addStringToCtx(exec_ctx, 'http.request.method', req.method);
-        this.addMapStrToCtx(exec_ctx, 'http.request.cookies', cookiesToMap(req.headers.get('Cookie') ?? ''));
-        this.addStringToCtx(exec_ctx, 'http.request.uri', `${url.pathname}${url.search}`);
-        this.addStringToCtx(exec_ctx, 'http.request.uri.path', url.pathname);
-        this.addStringToCtx(exec_ctx, 'http.request.uri.path.extension', parseExtension(url.pathname));
-        this.addStringToCtx(exec_ctx, 'http.request.uri.query', url.searchParams.toString());
-        this.addStringToCtx(exec_ctx, 'http.user_agent', req.headers.get('User-Agent') ?? '');
-        this.addNumberToCtx(exec_ctx, 'http.request.version', req.cf['http.request.version'] ?? 1);
-        this.addStringToCtx(exec_ctx, 'http.x_forwarded_for', req.headers.get('X-Forwarded-For') ?? '');
+        exec_ctx.addString('http.cookie', req.headers.get('Cookie') ?? '');
+        exec_ctx.addString('http.host', url.hostname);
+        exec_ctx.addString('http.referer', req.headers.get('Referer') ?? '');
+        exec_ctx.addString('http.request.full_uri', req.url);
+        exec_ctx.addString('http.request.method', req.method);
+        exec_ctx.addStringMap('http.request.cookies', cookiesToMap(req.headers.get('Cookie') ?? ''));
+        exec_ctx.addString('http.request.uri', `${url.pathname}${url.search}`);
+        exec_ctx.addString('http.request.uri.path', url.pathname);
+        exec_ctx.addString('http.request.uri.path.extension', parseExtension(url.pathname));
+        exec_ctx.addString('http.request.uri.query', url.searchParams.toString());
+        exec_ctx.addString('http.user_agent', req.headers.get('User-Agent') ?? '');
+        exec_ctx.addNumber('http.request.version', req.cf['http.request.version'] ?? 1);
+        exec_ctx.addString('http.x_forwarded_for', req.headers.get('X-Forwarded-For') ?? '');
         // handle duplicated fields for ip info
         const ipInfo = extractIpInfo(req.cf);
-        this.addIpAddrToCtx(exec_ctx, 'ip.src', ipInfo['ip.src'] ?? '0.0.0.0');
-        this.addStringToCtx(exec_ctx, 'ip.src.lat', ipInfo['ip.src.lat'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.src.lon', ipInfo['ip.src.lon'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.src.city', ipInfo['ip.src.city'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.src.postal_code', ipInfo['ip.src.postal_code'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.src.metro_code', ipInfo['ip.src.metro_code'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.src.region', ipInfo['ip.src.region'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.src.region_code', ipInfo['ip.src.region_code'] ?? '');
-        this.addNumberToCtx(exec_ctx, 'ip.src.asnum', ipInfo['ip.src.asnum'] ?? 0);
-        this.addStringToCtx(exec_ctx, 'ip.src.continent', ipInfo['ip.src.continent'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.src.country', ipInfo['ip.src.country'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.src.subdivision_1_iso_code', ipInfo['ip.src.subdivision_1_iso_code'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.src.subdivision_2_iso_code', ipInfo['ip.src.subdivision_2_iso_code'] ?? '');
-        this.addBoolenToCtx(exec_ctx, 'ip.src.is_in_european_union', ipInfo['ip.src.is_in_european_union'] ?? false);
-        this.addNumberToCtx(exec_ctx, 'ip.geoip.asnum', ipInfo['ip.src.asnum'] ?? 0);
-        this.addStringToCtx(exec_ctx, 'ip.geoip.continent', ipInfo['ip.src.continent'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.geoip.country', ipInfo['ip.src.country'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.geoip.subdivision_1_iso_code', ipInfo['ip.src.subdivision_1_iso_code'] ?? '');
-        this.addStringToCtx(exec_ctx, 'ip.geoip.subdivision_2_iso_code', ipInfo['ip.src.subdivision_2_iso_code'] ?? '');
-        this.addBoolenToCtx(exec_ctx, 'ip.geoip.is_in_european_union', ipInfo['ip.src.is_in_european_union'] ?? false);
-        this.addBoolenToCtx(exec_ctx, 'ssl', url.protocol === 'https:');
+        exec_ctx.addIpAddr('ip.src', ipInfo['ip.src'] ?? '0.0.0.0');
+        exec_ctx.addString('ip.src.lat', ipInfo['ip.src.lat'] ?? '');
+        exec_ctx.addString('ip.src.lon', ipInfo['ip.src.lon'] ?? '');
+        exec_ctx.addString('ip.src.city', ipInfo['ip.src.city'] ?? '');
+        exec_ctx.addString('ip.src.postal_code', ipInfo['ip.src.postal_code'] ?? '');
+        exec_ctx.addString('ip.src.metro_code', ipInfo['ip.src.metro_code'] ?? '');
+        exec_ctx.addString('ip.src.region', ipInfo['ip.src.region'] ?? '');
+        exec_ctx.addString('ip.src.region_code', ipInfo['ip.src.region_code'] ?? '');
+        exec_ctx.addNumber('ip.src.asnum', ipInfo['ip.src.asnum'] ?? 0);
+        exec_ctx.addString('ip.src.continent', ipInfo['ip.src.continent'] ?? '');
+        exec_ctx.addString('ip.src.country', ipInfo['ip.src.country'] ?? '');
+        exec_ctx.addString('ip.src.subdivision_1_iso_code', ipInfo['ip.src.subdivision_1_iso_code'] ?? '');
+        exec_ctx.addString('ip.src.subdivision_2_iso_code', ipInfo['ip.src.subdivision_2_iso_code'] ?? '');
+        exec_ctx.addBoolean('ip.src.is_in_european_union', ipInfo['ip.src.is_in_european_union'] ?? false);
+        exec_ctx.addNumber('ip.geoip.asnum', ipInfo['ip.src.asnum'] ?? 0);
+        exec_ctx.addString('ip.geoip.continent', ipInfo['ip.src.continent'] ?? '');
+        exec_ctx.addString('ip.geoip.country', ipInfo['ip.src.country'] ?? '');
+        exec_ctx.addString('ip.geoip.subdivision_1_iso_code', ipInfo['ip.src.subdivision_1_iso_code'] ?? '');
+        exec_ctx.addString('ip.geoip.subdivision_2_iso_code', ipInfo['ip.src.subdivision_2_iso_code'] ?? '');
+        exec_ctx.addBoolean('ip.geoip.is_in_european_union', ipInfo['ip.src.is_in_european_union'] ?? false);
+        exec_ctx.addBoolean('ssl', url.protocol === 'https:');
         // Argument and value fields for URIs
-        this.addMapStrToCtx(exec_ctx, 'http.request.uri.args', paramsToMap(url.search));
-        this.addStrArrayCtx(exec_ctx, 'http.request.uri.args.names', paramNamesToArray(url.search));
-        this.addStrArrayCtx(exec_ctx, 'http.request.uri.args.values', paramValuesToArray(url.search));
+        exec_ctx.addStringMap('http.request.uri.args', paramsToMap(url.search));
+        exec_ctx.addStringArray('http.request.uri.args.names', paramNamesToArray(url.search));
+        exec_ctx.addStringArray('http.request.uri.args.values', paramValuesToArray(url.search));
         // Header fields
-        this.addMapStrToCtx(exec_ctx, 'http.request.headers', headersToMap(req.headers));
-        this.addStrArrayCtx(exec_ctx, 'http.request.headers.names', [...req.headers.keys()]);
-        this.addStrArrayCtx(exec_ctx, 'http.request.headers.values', ([] as string[]).concat(...req.headers.values()));
-        this.addBoolenToCtx(exec_ctx, 'http.request.headers.truncated', req.cf['http.request.headers.truncated'] ?? false);
+        exec_ctx.addStringMap('http.request.headers', headersToMap(req.headers));
+        exec_ctx.addStringArray('http.request.headers.names', [...req.headers.keys()]);
+        exec_ctx.addStringArray('http.request.headers.values', ([] as string[]).concat(...req.headers.values()));
+        exec_ctx.addBoolean('http.request.headers.truncated', req.cf['http.request.headers.truncated'] ?? false);
         // Body fields
-        this.addStringToCtx(exec_ctx, 'http.request.body.raw', String(req.body ?? ''));
-        this.addBoolenToCtx(exec_ctx, 'http.request.body.truncated', req.cf['http.request.body.truncated'] ?? false);
+        exec_ctx.addString('http.request.body.raw', String(req.body ?? ''));
+        exec_ctx.addBoolean('http.request.body.truncated', req.cf['http.request.body.truncated'] ?? false);
         let bodyParams: Map<string, string[]>;
         if ((req.headers.get('Content-Type') ?? '').startsWith('application/x-www-form-urlencoded')) {
             bodyParams = paramsToMap(String(req.body ?? ''));
         } else {
             bodyParams = new Map<string, string[]>();
         }
-        this.addNumberToCtx(exec_ctx, 'http.request.body.size', String(req.body ?? '').length);
-        this.addMapStrToCtx(exec_ctx, 'http.request.body.form', bodyParams);
-        this.addStrArrayCtx(exec_ctx, 'http.request.body.form.names', [...bodyParams.keys()]);
-        this.addStrArrayCtx(exec_ctx, 'http.request.body.form.values', ([] as string[]).concat(...bodyParams.values()));
-        this.addStringToCtx(exec_ctx, 'http.request.body.mime', req.headers.get('Content-Type') ?? '');
+        exec_ctx.addNumber('http.request.body.size', String(req.body ?? '').length);
+        exec_ctx.addStringMap('http.request.body.form', bodyParams);
+        exec_ctx.addStringArray('http.request.body.form.names', [...bodyParams.keys()]);
+        exec_ctx.addStringArray('http.request.body.form.values', ([] as string[]).concat(...bodyParams.values()));
+        exec_ctx.addString('http.request.body.mime', req.headers.get('Content-Type') ?? '');
         // Dynamic fields
-        this.addStringToCtx(exec_ctx, 'cf.bot_management.ja3_hash', req.cf['cf.bot_management.ja3_hash'] ?? '');
-        this.addNumberToCtx(exec_ctx, 'cf.bot_management.score', req.cf['cf.bot_management.score'] ?? 100);
-        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.verified_bot', req.cf['cf.bot_management.verified_bot'] ?? false);
-        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.corporate_proxy', req.cf['cf.bot_management.corporate_proxy'] ?? false);
-        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.js_detection.passed', req.cf['cf.bot_management.js_detection.passed'] ?? false);
-        this.addNumArrayCtx(exec_ctx, 'cf.bot_management.detection_ids', req.cf['cf.bot_management.detection_ids'] ?? []);
-        this.addBoolenToCtx(exec_ctx, 'cf.bot_management.static_resource', req.cf['cf.bot_management.static_resource'] ?? false);
-        this.addNumberToCtx(exec_ctx, 'cf.client_trust_score', req.cf['cf.client_trust_score'] ?? 100);
-        this.addStringToCtx(exec_ctx, 'cf.ray_id', req.cf['cf.ray_id'] ?? '');
-        this.addNumberToCtx(exec_ctx, 'cf.threat_score', req.cf['cf.threat_score'] ?? 100);
-        this.addNumberToCtx(exec_ctx, 'cf.edge.server_port', parsePort(req));
-        this.addBoolenToCtx(exec_ctx, 'cf.client.bot', req.cf['cf.client.bot'] ?? false);
-        this.addStringToCtx(exec_ctx, 'cf.verified_bot_category', req.cf['cf.verified_bot_category'] ?? '');
-        this.addNumberToCtx(exec_ctx, 'cf.waf.score', req.cf['cf.waf.score'] ?? 100);
-        this.addNumberToCtx(exec_ctx, 'cf.waf.score.sqli', req.cf['cf.waf.score.sqli'] ?? 100);
-        this.addNumberToCtx(exec_ctx, 'cf.waf.score.xss', req.cf['cf.waf.score.xss'] ?? 100);
-        this.addNumberToCtx(exec_ctx, 'cf.waf.score.rce', req.cf['cf.waf.score.rce'] ?? 100);
-        this.addStringToCtx(exec_ctx, 'cf.waf.score.class', req.cf['cf.waf.score.class'] ?? '');
-        this.addStringToCtx(exec_ctx, 'cf.worker.upstream_zone', req.cf['cf.worker.upstream_zone'] ?? '');
+        exec_ctx.addString('cf.bot_management.ja3_hash', req.cf['cf.bot_management.ja3_hash'] ?? '');
+        exec_ctx.addNumber('cf.bot_management.score', req.cf['cf.bot_management.score'] ?? 100);
+        exec_ctx.addBoolean('cf.bot_management.verified_bot', req.cf['cf.bot_management.verified_bot'] ?? false);
+        exec_ctx.addBoolean('cf.bot_management.corporate_proxy', req.cf['cf.bot_management.corporate_proxy'] ?? false);
+        exec_ctx.addBoolean('cf.bot_management.js_detection.passed', req.cf['cf.bot_management.js_detection.passed'] ?? false);
+        exec_ctx.addNumberArray('cf.bot_management.detection_ids', req.cf['cf.bot_management.detection_ids'] ?? []);
+        exec_ctx.addBoolean('cf.bot_management.static_resource', req.cf['cf.bot_management.static_resource'] ?? false);
+        exec_ctx.addNumber('cf.client_trust_score', req.cf['cf.client_trust_score'] ?? 100);
+        exec_ctx.addString('cf.ray_id', req.cf['cf.ray_id'] ?? '');
+        exec_ctx.addNumber('cf.threat_score', req.cf['cf.threat_score'] ?? 100);
+        exec_ctx.addNumber('cf.edge.server_port', parsePort(req));
+        exec_ctx.addBoolean('cf.client.bot', req.cf['cf.client.bot'] ?? false);
+        exec_ctx.addString('cf.verified_bot_category', req.cf['cf.verified_bot_category'] ?? '');
+        exec_ctx.addNumber('cf.waf.score', req.cf['cf.waf.score'] ?? 100);
+        exec_ctx.addNumber('cf.waf.score.sqli', req.cf['cf.waf.score.sqli'] ?? 100);
+        exec_ctx.addNumber('cf.waf.score.xss', req.cf['cf.waf.score.xss'] ?? 100);
+        exec_ctx.addNumber('cf.waf.score.rce', req.cf['cf.waf.score.rce'] ?? 100);
+        exec_ctx.addString('cf.waf.score.class', req.cf['cf.waf.score.class'] ?? '');
+        exec_ctx.addString('cf.worker.upstream_zone', req.cf['cf.worker.upstream_zone'] ?? '');
         // IP Lists
-        checkAdded(this.wirefilter.set_all_lists_to_nevermatch(exec_ctx), 'can\'t add nevermatch list');
-        this.setupIntLists(exec_ctx, this.lists.int);
-        this.setupIpLists(exec_ctx, this.lists.ip);
-        try {
-            const matchResult = wirefilter.wirefilter_match(this.filter, exec_ctx);
-            if (matchResult.ok.success != 1) {
-                throw Error(`Filter can't be matched: ${matchResult.err.msg.data}`);
-            }
-            return matchResult.ok.value;
-        } finally {
-            wirefilter.wirefilter_free_execution_context(exec_ctx);
-        }
+        exec_ctx.setNeverMatchLists();
+        exec_ctx.setupIntLists(lists.int);
+        exec_ctx.setupIpLists(lists.ip);
+
+        return exec_ctx;
     }
 
-    private addNumberToCtx(execCtx: any, name: string, value: number) {
+    constructor(private wirefilter: any, private scheme: any) {
+        this.execCtx = wirefilter.wirefilter_create_execution_context(this.scheme);
+    }
+
+    get internalPointer() {
+        return this.execCtx;
+    }
+
+    addNumber(name: string, value: number) {
         checkAdded(this.wirefilter.wirefilter_add_int_value_to_execution_context(
-            execCtx,
+            this.execCtx,
             wirefilterString(name),
             value
         ), `Failed to add ${name}=${value} to the context`);
     }
 
-    private addStringToCtx(execCtx: any, name: string, value: string) {
+    addString(name: string, value: string) {
         checkAdded(this.wirefilter.wirefilter_add_bytes_value_to_execution_context(
-            execCtx,
+            this.execCtx,
             wirefilterString(name),
             wirefilterByteArray(value)
         ), `Failed to add ${name}=${value} to the context`);
     }
 
-    private addBoolenToCtx(execCtx: any, name: string, value: boolean) {
+    addBoolean(name: string, value: boolean) {
         checkAdded(this.wirefilter.wirefilter_add_bool_value_to_execution_context(
-            execCtx,
+            this.execCtx,
             wirefilterString(name),
             value
         ), `Failed to add ${name}=${value} to the context`);
     }
 
-    private addIpAddrToCtx(execCtx: any, name: string, value: string) {
+    addIpAddr(name: string, value: string) {
         const result = parseIp(value);
 
         if (result.type === 'v4') {
             checkAdded(this.wirefilter.wirefilter_add_ipv4_value_to_execution_context(
-                execCtx,
+                this.execCtx,
                 wirefilterString(name),
                 result.ip,
             ), `Failed to add ${name}=${value} to the context`);
         } else { // ipv6
             checkAdded(this.wirefilter.wirefilter_add_ipv6_value_to_execution_context(
-                execCtx,
+                this.execCtx,
                 wirefilterString(name),
                 result.ip,
             ), `Failed to add ${name}=${value} to the context`);
         }
     }
 
-    private addMapStrToCtx(execCtx: any, name: string, value: Map<string, string[]>) {
+    addStringMap(name: string, value: Map<string, string[]>) {
         const arrayType = this.wirefilter.wirefilter_create_array_type(WIREFILTER_TYPE_BYTES);
         const mapValue = this.wirefilter.wirefilter_create_map(arrayType);
         value.forEach((mapVal, mapKey) => {
@@ -619,13 +781,13 @@ class WirefilterFirewallRule implements FirewallRule {
             ), `Failed to add ${mapKey} value to map`);
         });
         checkAdded(this.wirefilter.wirefilter_add_map_value_to_execution_context(
-            execCtx,
+            this.execCtx,
             wirefilterString(name),
             mapValue,
         ), `Failed to add ${name}=${JSON.stringify(value)} to the context`);
     }
 
-    private addStrArrayCtx(execCtx: any, name: string, value: string[]) {
+    addStringArray(name: string, value: string[]) {
         const arr = this.wirefilter.wirefilter_create_array(WIREFILTER_TYPE_BYTES);
         value.forEach((val, ind) => {
             checkAdded(this.wirefilter.wirefilter_add_bytes_value_to_array(
@@ -635,13 +797,13 @@ class WirefilterFirewallRule implements FirewallRule {
             ), `Failed to add a ${val} to array`);
         });
         checkAdded(this.wirefilter.wirefilter_add_array_value_to_execution_context(
-            execCtx,
+            this.execCtx,
             wirefilterString(name),
             arr,
         ), `Failed to add ${name}=${JSON.stringify(value)} to the context`);
     }
 
-    private addNumArrayCtx(execCtx: any, name: string, value: number[]) {
+    addNumberArray(name: string, value: number[]) {
         const arr = this.wirefilter.wirefilter_create_array(WIREFILTER_TYPE_INT);
         value.forEach((val, ind) => {
             checkAdded(this.wirefilter.wirefilter_add_int_value_to_array(
@@ -651,23 +813,24 @@ class WirefilterFirewallRule implements FirewallRule {
             ), `Failed to add a ${val} to array`);
         });
         checkAdded(this.wirefilter.wirefilter_add_array_value_to_execution_context(
-            execCtx,
+            this.execCtx,
             wirefilterString(name),
             arr,
         ), `Failed to add ${name}=${JSON.stringify(value)} to the context`);
     }
 
-    private setupIntLists(execCtx: any, list: Lists['int']) {
+    setupIntLists(list: Lists['int']) {
         const map = this.buildList(WIREFILTER_TYPE_INT, list, (arr, i, value) => {
             checkAdded(
                 this.wirefilter.wirefilter_add_int_value_to_array(arr, i, value),
                 `Failed to add ${value} to array`
             );
         });
-        this.wirefilter.wirefilter_setup_int_lists(execCtx, map);
+        this.wirefilter.wirefilter_setup_int_lists(this.execCtx, map);
+
     }
 
-    private setupIpLists(execCtx: any, list: Lists['ip']) {
+    setupIpLists(list: Lists['ip']) {
         const map = this.buildList(WIREFILTER_TYPE_IP, list, (arr, i, value) => {
             const result = parseIp(value);
             switch (result.type) {
@@ -687,7 +850,15 @@ class WirefilterFirewallRule implements FirewallRule {
                 }
             }
         });
-        this.wirefilter.wirefilter_setup_ip_lists(execCtx, map);
+        this.wirefilter.wirefilter_setup_ip_lists(this.execCtx, map);
+    }
+
+    setNeverMatchLists() {
+        checkAdded(this.wirefilter.set_all_lists_to_nevermatch(this.execCtx), 'can\'t add nevermatch list');
+    }
+
+    free() {
+        this.wirefilter.wirefilter_free_execution_context(this.execCtx);
     }
 
     private buildList<T>(type: any, list: Record<string, T[]> | undefined, addToArray: (wirefilterArray: any, index: number, value: T) => void) {
@@ -703,19 +874,3 @@ class WirefilterFirewallRule implements FirewallRule {
         return map;
     }
 }
-
-type IPParseResult =
-    | { type: 'v4', ip: number[] }
-    | { type: 'v6', ip: number[] }
-
-const parseIp = (value: string): IPParseResult => {
-    if (value.indexOf('.') != -1) {
-        const ipv4 = new Address4(value).toArray();
-        return { type: 'v4', ip: ipv4 };
-    } else if (value.indexOf(':') != -1) {
-        const ipv6 = new Address6(value).toUnsignedByteArray();
-        return { type: 'v6', ip: ipv6 };
-    } else {
-        throw new Error(`Unable to parse ip address '${value}'`);
-    }
-};

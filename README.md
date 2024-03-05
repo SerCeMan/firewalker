@@ -19,14 +19,16 @@ rule.match(new Request('http://www.example.com')) // -> false
 
 See more [examples](https://github.com/SerCeMan/firewalker/blob/master/test/firewall.tests.ts).
 
+And for integration testsing see some of the [ruleset examples](https://github.com/SerCeMan/firewalker/blob/master/test/ruleset.tests.ts)
+
 ## Motivation
 
 It's easy to treat firewall rules as plain configuration. It's incredibly easy to manage a couple of rules that look like.
 ```
-http.host eq "www.example.org" 
+http.host eq "www.example.org"
 ```
 
-And end up with a rule that looks more like. 
+And end up with a rule that looks more like.
 ```wireshark
 http.host matches "(www|api)\.example\.org"
 and not lower(http.request.uri.path) matches "/(auth|login|logut).*"
@@ -35,9 +37,9 @@ and (
   ip.src in { 93.184.216.34 62.122.170.171 }
 )
 or cf.threat_score lt 10
-``` 
+```
 
-Over time, the number of rules and their complexity grows. Manually testing rules like the above is error-prone as humans are known to make mistakes. After a few steps up in complexity, it becomes apparent that firewall rules are code, and need to be treated as code. They need to be stored in a source code repository, managed with a tool like Terraform, and the changes need to be tested on CI. 
+Over time, the number of rules and their complexity grows. Manually testing rules like the above is error-prone as humans are known to make mistakes. After a few steps up in complexity, it becomes apparent that firewall rules are code, and need to be treated as code. They need to be stored in a source code repository, managed with a tool like Terraform, and the changes need to be tested on CI.
 
 Here is where Firewalker comes into play allowing you to write unit tests to ensure that a change to the path regex isn't going to block all of the traffic to your site or cancel out the effect of the rule completely. For instance, for the rule above, you can define multiple assertions with jest.
 
