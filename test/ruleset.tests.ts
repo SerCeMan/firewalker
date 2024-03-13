@@ -87,7 +87,7 @@ describe('Multi-rule testing', () => {
         });
         expect(ruleset.matchRequest(request)).toMatchObject({
             outcome: {
-                action: 'allow',
+                action: 'no_match',
             }
         });
     });
@@ -164,7 +164,7 @@ describe('rules with lists', () => {
         const request = new Request('https://example.org', { cf: { 'ip.geoip.asnum': 123 } });
         expect(ruleset.matchRequest(request)).toMatchObject({
             outcome: {
-                action: 'allow',
+                action: 'no_match',
             }
         });
     });
@@ -183,7 +183,7 @@ describe('rules with lists', () => {
         const request = new Request('https://example.org', { cf: { 'ip.src': '10.0.0.1' } });
         expect(ruleset.matchRequest(request)).toMatchObject({
             outcome: {
-                action: 'allow',
+                action: 'no_match',
             }
         });
     });

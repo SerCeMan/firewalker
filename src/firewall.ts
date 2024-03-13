@@ -514,7 +514,7 @@ type RulesetMatchResult = {
     skippedProducts: Set<Product>
     outcome:
     | {
-        action: | 'allow'
+        action: 'no_match'
     }
     | {
         id: string
@@ -563,7 +563,7 @@ export class FirewallRuleset {
             loggedRules: [],
             skippedPhases: new Set(),
             skippedProducts: new Set(),
-            outcome: { action: 'allow' },
+            outcome: { action: 'no_match' },
         };
         const execCtx = ExecutionContext.buildFromRequest(this.wirefilter, this.scheme, this.defaultLists, request);
         try {

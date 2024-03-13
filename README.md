@@ -19,7 +19,7 @@ rule.match(new Request('http://www.example.com')) // -> false
 
 See more [examples](https://github.com/SerCeMan/firewalker/blob/master/test/firewall.tests.ts).
 
-And for integration testsing see some of the [ruleset examples](https://github.com/SerCeMan/firewalker/blob/master/test/ruleset.tests.ts)
+And for integration testing see some of the [ruleset examples](https://github.com/SerCeMan/firewalker/blob/master/test/ruleset.tests.ts)
 
 ## Motivation
 
