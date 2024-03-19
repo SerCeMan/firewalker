@@ -499,27 +499,24 @@ type FirewallAction =
         products?: Product[]
     }
     | {
-        type: 'block' | 'challenge' | 'managed_challenge' | 'js_challenge' | 'log'
+        type: 'log'
     }
+    | TerminalAction
+
+type TerminalAction = { type: 'block' | 'challenge' | 'managed_challenge' | 'js_challenge' }
+
+const TERMINAL_ACTIONS: Readonly<TerminalAction['type'][]> = Object.freeze(
+    ['block', 'challenge', 'managed_challenge', 'js_challenge']
+);
+
+const isTerminalAction = (action: FirewallAction): action is TerminalAction => {
+    return (TERMINAL_ACTIONS as string[]).includes(action.type);
+};
 
 type Rule = {
     id: string
     expression: WirefilterFirewallRule
     action: FirewallAction
-}
-
-type RulesetMatchResult = {
-    loggedRules: string[]
-    skippedPhases: Set<Phase>
-    skippedProducts: Set<Product>
-    outcome:
-    | {
-        action: 'no_match'
-    }
-    | {
-        id: string
-        action: Exclude<FirewallAction['type'], 'skip' | 'log'>
-    }
 }
 
 export class FirewallRuleset {
@@ -558,47 +555,92 @@ export class FirewallRuleset {
      * @param request incoming request to be matched against
      * @returns the provided rule id if a successful match is made, undefined otherwise
      */
-    matchRequest(request: Request): RulesetMatchResult {
-        const results: RulesetMatchResult = {
-            loggedRules: [],
-            skippedPhases: new Set(),
-            skippedProducts: new Set(),
-            outcome: { action: 'no_match' },
-        };
+    matchRequest(request: Request): RequestMatchResults {
+        const results = new RulesetMatchResults();
         const execCtx = ExecutionContext.buildFromRequest(this.wirefilter, this.scheme, this.defaultLists, request);
         try {
-            ruleLoop: for (const rule of this.rules) {
+            for (const rule of this.rules) {
                 if (!rule.expression.matchUsingContext(execCtx)) continue;
 
-                switch (rule.action.type) {
-                    case 'block':
-                    case 'challenge':
-                    case 'js_challenge':
-                    case 'managed_challenge':
-                        results.outcome = {
-                            id: rule.id,
-                            action: rule.action.type
-                        };
-                        break ruleLoop;
-                    case 'log':
-                        results.loggedRules.push(rule.id);
-                        break;
-                    case 'skip':
-                        if (rule.action.ruleset === 'current') {
-                            break ruleLoop;
-                        }
-                        rule.action.phases?.forEach(phase => results.skippedPhases.add(phase));
-                        rule.action.products?.forEach(product => results.skippedProducts.add(product));
-                        break;
-                    default:
-                        throw new Error(`Unknown action for ${rule.id}: ${rule.action}`);
+                results.matches.push({
+                    ruleId: rule.id,
+                    action: { ...rule.action }
+                });
 
+                if (isTerminalAction(rule.action)) {
+                    break;
+                }
+                if (rule.action.type === 'skip' && rule.action.ruleset === 'current') {
+                    break;
                 }
             }
         } finally {
             execCtx.free();
         }
         return results;
+    }
+}
+
+export interface RuleMatch {
+    ruleId: string
+    action: FirewallAction
+}
+
+export interface TerminatingActionMatch {
+    ruleId: string
+    action: TerminalAction
+}
+
+const isTerminatingActionMatch = (match: RuleMatch): match is TerminatingActionMatch => {
+    return isTerminalAction(match.action);
+};
+
+export interface RequestMatchResults {
+    matches: RuleMatch[]
+    skippedPhases: Phase[]
+    skippedProducts: Product[]
+    loggedRules: string[]
+    terminatedEarly: boolean
+    terminalAction: { action: { type: 'no_match' } } | TerminatingActionMatch
+}
+
+class RulesetMatchResults implements RequestMatchResults {
+    matches: RuleMatch[] = [];
+
+    get skippedPhases(): Phase[] {
+        const phases = new Set<Phase>();
+        for (const m of this.matches) {
+            if (m.action.type === 'skip') {
+                m.action.phases?.forEach(p => phases.add(p));
+            }
+        }
+        return Array.from(phases);
+    }
+
+    get skippedProducts(): Product[] {
+        const products = new Set<Product>();
+        for (const m of this.matches) {
+            if (m.action.type === 'skip') {
+                m.action.products?.forEach(p => products.add(p));
+            }
+        }
+        return Array.from(products);
+    }
+
+    get loggedRules(): string[] {
+        return this.matches.filter(m => m.action.type === 'log').map(m => m.ruleId);
+    }
+
+    get terminatedEarly(): boolean {
+        return this.matches.some(m => m.action.type === 'skip' && m.action.ruleset === 'current');
+    }
+
+    get terminalAction(): TerminatingActionMatch | { action: { type: 'no_match'; } } {
+        const terminalMatches = this.matches.filter(isTerminatingActionMatch);
+
+        if (terminalMatches.length === 0) return { action: { type: 'no_match' } };
+
+        return terminalMatches[terminalMatches.length - 1];
     }
 }
 

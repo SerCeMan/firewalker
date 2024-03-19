@@ -45,11 +45,10 @@ describe('Multi-rule testing', () => {
                 ['Referer', 'https://developer.example.org/en-US'],
             ]
         });
-        expect(ruleset.matchRequest(request)).toMatchObject({
-            outcome: {
-                id: 'blockCookies',
-                action: 'block',
-            }
+        const result = ruleset.matchRequest(request);
+        expect(result.terminalAction).toMatchObject({
+            ruleId: 'blockCookies',
+            action: { type: 'block', },
         });
     });
 
@@ -60,9 +59,8 @@ describe('Multi-rule testing', () => {
                 ['Referer', 'https://developer.example.org/en-US'],
             ]
         });
-        expect(ruleset.matchRequest(request)).toMatchObject({
-            loggedRules: ['logReferrers']
-        });
+        const result = ruleset.matchRequest(request);
+        expect(result.loggedRules).toStrictEqual(['logReferrers']);
     });
 
     it('challenges as expected', () => {
@@ -71,11 +69,10 @@ describe('Multi-rule testing', () => {
                 ['Cookie', 'gingersnaps'],
             ]
         });
-        expect(ruleset.matchRequest(request)).toMatchObject({
-            outcome: {
-                id: 'testChallenges',
-                action: 'managed_challenge'
-            }
+        const result = ruleset.matchRequest(request);
+        expect(result.terminalAction).toMatchObject({
+            ruleId: 'testChallenges',
+            action: { type: 'managed_challenge' },
         });
     });
 
@@ -85,10 +82,10 @@ describe('Multi-rule testing', () => {
                 ['Cookie', 'gingersnaps'],
             ]
         });
-        expect(ruleset.matchRequest(request)).toMatchObject({
-            outcome: {
-                action: 'no_match',
-            }
+        const result = ruleset.matchRequest(request);
+        expect(result.terminatedEarly).toBeTruthy();
+        expect(result.terminalAction).toMatchObject({
+            action: { type: 'no_match', },
         });
     });
 
@@ -152,49 +149,44 @@ describe('rules with lists', () => {
 
     it('challenges when not in lists', () => {
         const request = new Request('https://example.org');
-        expect(ruleset.matchRequest(request)).toMatchObject({
-            outcome: {
-                id: 'challengeRemaining',
-                action: 'managed_challenge',
-            }
+        const result = ruleset.matchRequest(request);
+        expect(result.terminalAction).toMatchObject({
+            ruleId: 'challengeRemaining',
+            action: { type: 'managed_challenge', }
         });
     });
 
     it('bypasses when asn in list', () => {
         const request = new Request('https://example.org', { cf: { 'ip.geoip.asnum': 123 } });
-        expect(ruleset.matchRequest(request)).toMatchObject({
-            outcome: {
-                action: 'no_match',
-            }
+        const result = ruleset.matchRequest(request);
+        expect(result.terminalAction).toMatchObject({
+            action: { type: 'no_match', }
         });
     });
 
     it('blocks bad asn', () => {
         const request = new Request('https://example.org', { cf: { 'ip.geoip.asnum': 456 } });
-        expect(ruleset.matchRequest(request)).toMatchObject({
-            outcome: {
-                id: 'blockAsns',
-                action: 'block',
-            }
+        const result = ruleset.matchRequest(request);
+        expect(result.terminalAction).toMatchObject({
+            ruleId: 'blockAsns',
+            action: { type: 'block', }
         });
     });
 
     it('bypasses when ip in list', () => {
         const request = new Request('https://example.org', { cf: { 'ip.src': '10.0.0.1' } });
-        expect(ruleset.matchRequest(request)).toMatchObject({
-            outcome: {
-                action: 'no_match',
-            }
+        const result = ruleset.matchRequest(request);
+        expect(result.terminalAction).toMatchObject({
+            action: { type: 'no_match', }
         });
     });
 
     it('blocks bad asn', () => {
         const request = new Request('https://example.org', { cf: { 'ip.src': '11.0.0.1' } });
-        expect(ruleset.matchRequest(request)).toMatchObject({
-            outcome: {
-                id: 'blockIps',
-                action: 'block',
-            }
+        const result = ruleset.matchRequest(request);
+        expect(result.terminalAction).toMatchObject({
+            ruleId: 'blockIps',
+            action: { type: 'block', }
         });
     });
 });
