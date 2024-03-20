@@ -513,6 +513,10 @@ const isTerminalAction = (action: FirewallAction): action is TerminalAction => {
     return (TERMINAL_ACTIONS as string[]).includes(action.type);
 };
 
+const isSkipCurrent = (action: FirewallAction): boolean => {
+    return action.type === 'skip' && action.ruleset === 'current';
+};
+
 type Rule = {
     id: string
     expression: WirefilterFirewallRule
@@ -570,7 +574,7 @@ export class FirewallRuleset {
                 if (isTerminalAction(rule.action)) {
                     break;
                 }
-                if (rule.action.type === 'skip' && rule.action.ruleset === 'current') {
+                if (isSkipCurrent(rule.action)) {
                     break;
                 }
             }
@@ -586,22 +590,13 @@ export interface RuleMatch {
     action: FirewallAction
 }
 
-export interface TerminatingActionMatch {
-    ruleId: string
-    action: TerminalAction
-}
-
-const isTerminatingActionMatch = (match: RuleMatch): match is TerminatingActionMatch => {
-    return isTerminalAction(match.action);
-};
-
 export interface RequestMatchResults {
     matches: RuleMatch[]
     skippedPhases: Phase[]
     skippedProducts: Product[]
     loggedRules: string[]
     terminatedEarly: boolean
-    terminalAction: { action: { type: 'no_match' } } | TerminatingActionMatch
+    terminalAction: { action: { type: 'no_match' } } | RuleMatch
 }
 
 class RulesetMatchResults implements RequestMatchResults {
@@ -632,11 +627,13 @@ class RulesetMatchResults implements RequestMatchResults {
     }
 
     get terminatedEarly(): boolean {
-        return this.matches.some(m => m.action.type === 'skip' && m.action.ruleset === 'current');
+        return this.terminalAction.action.type !== 'no_match';
     }
 
-    get terminalAction(): TerminatingActionMatch | { action: { type: 'no_match'; } } {
-        const terminalMatches = this.matches.filter(isTerminatingActionMatch);
+    get terminalAction(): RuleMatch | { action: { type: 'no_match'; } } {
+        const terminalMatches = this.matches.filter(
+            m => isTerminalAction(m.action) || isSkipCurrent(m.action)
+        );
 
         if (terminalMatches.length === 0) return { action: { type: 'no_match' } };
 
