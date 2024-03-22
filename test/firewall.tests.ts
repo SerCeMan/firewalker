@@ -835,18 +835,19 @@ describe('Transformation function', () => {
 
     it('remove_bytes removes values from strings', () => {
         const rule = firewall.createRule(`
-            remove_bytes(http.host,".") == "exampleorg"
+            remove_bytes(http.host,".e") == "xamplorg"
         `);
 
         expect(rule.match(new Request('http://example.org/hello'))).toBeTruthy();
     });
     it('substring correctly slices a string', () => {
         const rule = firewall.createRule(`
-            substring(http.host,1) == "xample.org" and
-            substring(http.host,-1) == "g"
+            substring(http.request.uri,-2) == "jk" and
+            substring(http.request.uri,2) == "sdfghjk" and
+            substring(http.request.uri,2,5) == "sdf" 
         `);
 
-        expect(rule.match(new Request('http://example.org/hello'))).toBeTruthy();
+        expect(rule.match(new Request('http://example.org/asdfghjk'))).toBeTruthy();
     });
 });
 
