@@ -1,3 +1,21 @@
+From 67eb23bb802b582c82072ec64672062801f58de4 Mon Sep 17 00:00:00 2001
+From: Nathan Fowler <nfowler@canva.com>
+Date: Fri, 22 Mar 2024 15:17:02 +1030
+Subject: [PATCH 2/3] 02: add ip and int lists
+
+---
+ Cargo.lock                            | 757 +++++++++++++-------------
+ engine/src/lib.rs                     |   2 +
+ engine/src/matchers/int_list_store.rs |  98 ++++
+ engine/src/matchers/ip_list_store.rs  | 159 ++++++
+ engine/src/matchers/mod.rs            |   8 +
+ engine/src/scheme.rs                  |   4 +-
+ ffi/src/lib.rs                        | 106 +++-
+ 7 files changed, 748 insertions(+), 386 deletions(-)
+ create mode 100644 engine/src/matchers/int_list_store.rs
+ create mode 100644 engine/src/matchers/ip_list_store.rs
+ create mode 100644 engine/src/matchers/mod.rs
+
 diff --git a/Cargo.lock b/Cargo.lock
 index bd724e6..efa1f3f 100644
 --- a/Cargo.lock
@@ -2045,3 +2063,6 @@ index 718ae2c..d0309d7 100644
      #[test]
      fn filter_hash() {
          let scheme = create_scheme();
+-- 
+2.43.1
+
