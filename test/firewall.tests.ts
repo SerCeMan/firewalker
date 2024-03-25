@@ -814,6 +814,41 @@ describe('Transformation function', () => {
 
         expect(rule.match(new Request('http://example.org/hello%20firewalker%20world%21'))).toBeTruthy();
     });
+
+    it('starts_with returns true when the field value starts with the string', () => {
+        const rule = firewall.createRule(`
+            starts_with(http.host,"example")
+        `);
+
+        expect(rule.match(new Request('http://example.org/hello'))).toBeTruthy();
+        expect(rule.match(new Request('http://fake-example.org/hello'))).toBeFalsy();
+    });
+
+    it('ends_with returns true when the field value end with the string', () => {
+        const rule = firewall.createRule(`
+            ends_with(http.host,"org")
+        `);
+
+        expect(rule.match(new Request('http://example.org/hello'))).toBeTruthy();
+        expect(rule.match(new Request('http://example.com/hello'))).toBeFalsy();
+    });
+
+    it('remove_bytes removes values from strings', () => {
+        const rule = firewall.createRule(`
+            remove_bytes(http.host,".e") == "xamplorg"
+        `);
+
+        expect(rule.match(new Request('http://example.org/hello'))).toBeTruthy();
+    });
+    it('substring correctly slices a string', () => {
+        const rule = firewall.createRule(`
+            substring(http.request.uri,-2) == "jk" and
+            substring(http.request.uri,2) == "sdfghjk" and
+            substring(http.request.uri,2,5) == "sdf" 
+        `);
+
+        expect(rule.match(new Request('http://example.org/asdfghjk'))).toBeTruthy();
+    });
 });
 
 describe('Lists', () => {
