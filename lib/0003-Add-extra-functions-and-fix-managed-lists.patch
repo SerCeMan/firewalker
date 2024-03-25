@@ -1,6 +1,6 @@
-From 2d872985346dc70dc66c0139c4d68c8cbedabe3f Mon Sep 17 00:00:00 2001
+From 69d5fb18dd181425af94aeb46188913ad8d12938 Mon Sep 17 00:00:00 2001
 From: Nathan Fowler <nfowler@canva.com>
-Date: Mon, 25 Mar 2024 10:20:41 +1030
+Date: Mon, 25 Mar 2024 15:23:33 +1030
 Subject: [PATCH 3/3] Add extra functions and fix managed lists
 
 ---
@@ -22,7 +22,7 @@ index 4521b3e..2c91ad4 100644
                          if res.is_empty() {
                              return Err((
 diff --git a/ffi/src/lib.rs b/ffi/src/lib.rs
-index d0309d7..3a897b1 100644
+index d0309d7..263fe85 100644
 --- a/ffi/src/lib.rs
 +++ b/ffi/src/lib.rs
 @@ -12,11 +12,17 @@ use fnv::FnvHasher;
@@ -91,7 +91,7 @@ index d0309d7..3a897b1 100644
 +                //Normalize start index if negative
 +                let start_idx = match start {
 +                    0.. => start,
-+                    _ => bytes.len() as i32 - 1 + start,
++                    _ => bytes.len() as i32 + start,
 +                };
 +                if start_idx >= end_idx {
 +                    panic!(
