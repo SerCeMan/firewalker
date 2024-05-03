@@ -1,5 +1,1 @@
-export {
-    Firewall,
-    FirewallRule,
-    Request
-} from './firewall';
+export { Firewall, FirewallRule, Request } from './firewall';
