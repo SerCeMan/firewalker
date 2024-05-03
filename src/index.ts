@@ -1,1 +1,2 @@
-export { Firewall, FirewallRule, Request } from './firewall';
+export { Firewall, FirewallRule, FirewallRuleset, Request } from './firewall';
+export type { FirewallAction } from './firewall';

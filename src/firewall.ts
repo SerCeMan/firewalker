@@ -513,7 +513,7 @@ class WirefilterFirewallRule implements FirewallRule {
 type Phase = 'http_ratelimit' | 'http_request_sbfm' | 'http_request_firewall_managed';
 type Product = 'zoneLockdown' | 'uaBlock' | 'bic' | 'hot' | 'securityLevel' | 'rateLimit' | 'waf';
 
-type FirewallAction =
+export type FirewallAction =
   | {
       type: 'skip',
       ruleset?: 'current',
