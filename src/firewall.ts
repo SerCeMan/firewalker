@@ -359,21 +359,21 @@ function extractIpInfo(cf: CfRequestExt): IpInfo {
 }
 
 type IpInfo = Readonly<{
-  'ip.src'?: string,
-  'ip.src.lat'?: string,
-  'ip.src.lon'?: string,
-  'ip.src.city'?: string,
-  'ip.src.postal_code'?: string,
-  'ip.src.metro_code'?: string,
-  'ip.src.region'?: string,
-  'ip.src.region_code'?: string,
-  'ip.src.timezone.name'?: string,
-  'ip.src.asnum'?: number,
-  'ip.src.continent'?: string,
-  'ip.src.country'?: string,
-  'ip.src.subdivision_1_iso_code'?: string,
-  'ip.src.subdivision_2_iso_code'?: string,
-  'ip.src.is_in_european_union'?: boolean,
+  'ip.src'?: string;
+  'ip.src.lat'?: string;
+  'ip.src.lon'?: string;
+  'ip.src.city'?: string;
+  'ip.src.postal_code'?: string;
+  'ip.src.metro_code'?: string;
+  'ip.src.region'?: string;
+  'ip.src.region_code'?: string;
+  'ip.src.timezone.name'?: string;
+  'ip.src.asnum'?: number;
+  'ip.src.continent'?: string;
+  'ip.src.country'?: string;
+  'ip.src.subdivision_1_iso_code'?: string;
+  'ip.src.subdivision_2_iso_code'?: string;
+  'ip.src.is_in_european_union'?: boolean;
 }>;
 
 /**
@@ -381,48 +381,48 @@ type IpInfo = Readonly<{
  * explicitly.
  */
 export type CfRequestExt = Readonly<{
-  'http.request.version'?: number,
-  'ip.src'?: string,
-  'ip.src.lat'?: string,
-  'ip.src.lon'?: string,
-  'ip.src.city'?: string,
-  'ip.src.postal_code'?: string,
-  'ip.src.metro_code'?: string,
-  'ip.src.region'?: string,
-  'ip.src.region_code'?: string,
-  'ip.src.timezone.name'?: string,
-  'ip.src.asnum'?: number,
-  'ip.src.continent'?: string,
-  'ip.src.country'?: string,
-  'ip.src.subdivision_1_iso_code'?: string,
-  'ip.src.subdivision_2_iso_code'?: string,
-  'ip.src.is_in_european_union'?: boolean,
-  'ip.geoip.asnum'?: number,
-  'ip.geoip.continent'?: string,
-  'ip.geoip.country'?: string,
-  'ip.geoip.subdivision_1_iso_code'?: string,
-  'ip.geoip.subdivision_2_iso_code'?: string,
-  'ip.geoip.is_in_european_union'?: boolean,
-  'http.request.headers.truncated'?: boolean,
-  'http.request.body.truncated'?: boolean,
-  'cf.bot_management.score'?: number,
-  'cf.bot_management.ja3_hash'?: string,
-  'cf.bot_management.js_detection.passed'?: boolean,
-  'cf.bot_management.detection_ids'?: number[],
-  'cf.bot_management.static_resource'?: boolean,
-  'cf.bot_management.verified_bot'?: boolean,
-  'cf.bot_management.corporate_proxy'?: boolean,
-  'cf.client_trust_score'?: number,
-  'cf.ray_id'?: string,
-  'cf.threat_score'?: number,
-  'cf.client.bot'?: boolean,
-  'cf.verified_bot_category'?: string,
-  'cf.waf.score'?: number,
-  'cf.waf.score.sqli'?: number,
-  'cf.waf.score.xss'?: number,
-  'cf.waf.score.rce'?: number,
-  'cf.waf.score.class'?: string,
-  'cf.worker.upstream_zone'?: string,
+  'http.request.version'?: number;
+  'ip.src'?: string;
+  'ip.src.lat'?: string;
+  'ip.src.lon'?: string;
+  'ip.src.city'?: string;
+  'ip.src.postal_code'?: string;
+  'ip.src.metro_code'?: string;
+  'ip.src.region'?: string;
+  'ip.src.region_code'?: string;
+  'ip.src.timezone.name'?: string;
+  'ip.src.asnum'?: number;
+  'ip.src.continent'?: string;
+  'ip.src.country'?: string;
+  'ip.src.subdivision_1_iso_code'?: string;
+  'ip.src.subdivision_2_iso_code'?: string;
+  'ip.src.is_in_european_union'?: boolean;
+  'ip.geoip.asnum'?: number;
+  'ip.geoip.continent'?: string;
+  'ip.geoip.country'?: string;
+  'ip.geoip.subdivision_1_iso_code'?: string;
+  'ip.geoip.subdivision_2_iso_code'?: string;
+  'ip.geoip.is_in_european_union'?: boolean;
+  'http.request.headers.truncated'?: boolean;
+  'http.request.body.truncated'?: boolean;
+  'cf.bot_management.score'?: number;
+  'cf.bot_management.ja3_hash'?: string;
+  'cf.bot_management.js_detection.passed'?: boolean;
+  'cf.bot_management.detection_ids'?: number[];
+  'cf.bot_management.static_resource'?: boolean;
+  'cf.bot_management.verified_bot'?: boolean;
+  'cf.bot_management.corporate_proxy'?: boolean;
+  'cf.client_trust_score'?: number;
+  'cf.ray_id'?: string;
+  'cf.threat_score'?: number;
+  'cf.client.bot'?: boolean;
+  'cf.verified_bot_category'?: string;
+  'cf.waf.score'?: number;
+  'cf.waf.score.sqli'?: number;
+  'cf.waf.score.xss'?: number;
+  'cf.waf.score.rce'?: number;
+  'cf.waf.score.class'?: string;
+  'cf.worker.upstream_zone'?: string;
 }>;
 
 /**
@@ -461,8 +461,8 @@ export interface FirewallRule {
 }
 
 type Lists = {
-  int?: Record<string, number[]>,
-  ip?: Record<string, string[]>,
+  int?: Record<string, number[]>;
+  ip?: Record<string, string[]>;
 };
 
 class WirefilterFirewallRule implements FirewallRule {
@@ -515,13 +515,13 @@ type Product = 'zoneLockdown' | 'uaBlock' | 'bic' | 'hot' | 'securityLevel' | 'r
 
 export type FirewallAction =
   | {
-      type: 'skip',
-      ruleset?: 'current',
-      phases?: Phase[],
-      products?: Product[],
+      type: 'skip';
+      ruleset?: 'current';
+      phases?: Phase[];
+      products?: Product[];
     }
   | {
-      type: 'log',
+      type: 'log';
     }
   | TerminalAction;
 
@@ -543,9 +543,9 @@ const isSkipCurrent = (action: FirewallAction): boolean => {
 };
 
 type Rule = {
-  id: string,
-  expression: WirefilterFirewallRule,
-  action: FirewallAction,
+  id: string;
+  expression: WirefilterFirewallRule;
+  action: FirewallAction;
 };
 
 export class FirewallRuleset {
@@ -572,7 +572,7 @@ export class FirewallRuleset {
    *
    * @param rule Object with an id and a WAF language expression
    */
-  addRule(rule: { id: string, expression: string, action: FirewallAction }): this {
+  addRule(rule: { id: string; expression: string; action: FirewallAction }): this {
     this.rules.push({
       id: rule.id,
       expression: new WirefilterFirewallRule(this.wirefilter, this.scheme, rule.expression),
@@ -678,7 +678,7 @@ class RulesetMatchResults implements RequestMatchResults {
   }
 }
 
-type IPParseResult = { type: 'v4', ip: number[] } | { type: 'v6', ip: number[] };
+type IPParseResult = { type: 'v4'; ip: number[] } | { type: 'v6'; ip: number[] };
 
 const parseIp = (value: string): IPParseResult => {
   if (value.indexOf('.') != -1) {

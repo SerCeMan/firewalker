@@ -1051,14 +1051,20 @@ describe('Transformation function', () => {
     expect(
       rule.match(
         new Request('http://example.org', {
-          headers: [['x-lang-1', 'kotlin'], ['x-lang-2', 'typescript']],
+          headers: [
+            ['x-lang-1', 'kotlin'],
+            ['x-lang-2', 'typescript'],
+          ],
         }),
       ),
     ).toBeFalsy();
     expect(
       rule.match(
         new Request('http://example.org', {
-          headers: [['x-header1', 'kotlin'], ['x-header2', 'java']],
+          headers: [
+            ['x-header1', 'kotlin'],
+            ['x-header2', 'java'],
+          ],
         }),
       ),
     ).toBeTruthy();
@@ -1073,14 +1079,20 @@ describe('Transformation function', () => {
     expect(
       rule.match(
         new Request('http://example.org', {
-          headers: [['x-lang-1', 'java'], ['x-lang-2', 'typescript']],
+          headers: [
+            ['x-lang-1', 'java'],
+            ['x-lang-2', 'typescript'],
+          ],
         }),
       ),
     ).toBeFalsy();
     expect(
       rule.match(
         new Request('http://example.org', {
-          headers: [['x-header1', 'java'], ['x-header2', 'java']],
+          headers: [
+            ['x-header1', 'java'],
+            ['x-header2', 'java'],
+          ],
         }),
       ),
     ).toBeTruthy();

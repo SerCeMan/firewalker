@@ -40,7 +40,10 @@ describe('Multi-rule testing', () => {
 
   it('blocks expected request without cookie', () => {
     const request = new Request('http://example.org', {
-      headers: [['Cookie', 'oatmeal'], ['Referer', 'https://developer.example.org/en-US']],
+      headers: [
+        ['Cookie', 'oatmeal'],
+        ['Referer', 'https://developer.example.org/en-US'],
+      ],
     });
     const result = ruleset.matchRequest(request);
     expect(result.terminalAction).toMatchObject({
@@ -51,7 +54,10 @@ describe('Multi-rule testing', () => {
 
   it('logs rules in results', () => {
     const request = new Request('http://example.org/', {
-      headers: [['Cookie', 'gingersnaps'], ['Referer', 'https://developer.example.org/en-US']],
+      headers: [
+        ['Cookie', 'gingersnaps'],
+        ['Referer', 'https://developer.example.org/en-US'],
+      ],
     });
     const result = ruleset.matchRequest(request);
     expect(result.loggedRules).toStrictEqual(['logReferrers']);
