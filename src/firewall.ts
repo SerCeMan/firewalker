@@ -294,6 +294,7 @@ export class Firewall {
     addString(wirefilter, scheme, 'http.request.body.mime');
     // Dynamic fields
     addString(wirefilter, scheme, 'cf.bot_management.ja3_hash');
+    addString(wirefilter, scheme, 'cf.bot_management.ja4');
     addBoolen(wirefilter, scheme, 'cf.bot_management.js_detection.passed');
     addNumArray(wirefilter, scheme, 'cf.bot_management.detection_ids');
     addNumber(wirefilter, scheme, 'cf.bot_management.score');
@@ -407,6 +408,7 @@ export type CfRequestExt = Readonly<{
   'http.request.body.truncated'?: boolean;
   'cf.bot_management.score'?: number;
   'cf.bot_management.ja3_hash'?: string;
+  'cf.bot_management.ja4'?: string;
   'cf.bot_management.js_detection.passed'?: boolean;
   'cf.bot_management.detection_ids'?: number[];
   'cf.bot_management.static_resource'?: boolean;
@@ -795,6 +797,7 @@ class ExecutionContext {
     exec_ctx.addString('http.request.body.mime', req.headers.get('Content-Type') ?? '');
     // Dynamic fields
     exec_ctx.addString('cf.bot_management.ja3_hash', req.cf['cf.bot_management.ja3_hash'] ?? '');
+    exec_ctx.addString('cf.bot_management.ja4', req.cf['cf.bot_management.ja4'] ?? '');
     exec_ctx.addNumber('cf.bot_management.score', req.cf['cf.bot_management.score'] ?? 100);
     exec_ctx.addBoolean(
       'cf.bot_management.verified_bot',
