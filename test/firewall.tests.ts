@@ -801,6 +801,22 @@ describe('Dynamic fields', () => {
     ).toBeTruthy();
   });
 
+  it('should match the request with a known JA4 hash', () => {
+    const rule = firewall.createRule(`
+            cf.bot_management.ja4 == "t13d2014h2_a09f3c656075_14788d8d241b"
+        `);
+
+    expect(rule.match(new Request('https://example.org'))).toBeFalsy();
+    expect(
+      rule.match(
+        new Request('https://example.org', {
+          cf: { 'cf.bot_management.ja4': 't13d2014h2_a09f3c656075_14788d8d241b' },
+        }),
+      ),
+    ).toBeTruthy();
+
+  });
+
   it('should match the request with js detection passed', () => {
     const rule = firewall.createRule(`
             cf.bot_management.js_detection.passed
