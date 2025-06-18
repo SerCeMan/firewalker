@@ -2,7 +2,7 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "lib": [
-      "es2018",
+      "ESNext",
       "webworker"
     ],
     "module": "commonjs",
@@ -10,12 +10,13 @@
     "removeComments": false,
     "sourceMap": true,
     "strict": true,
-    "target": "es2018",
+    "target": "ES2019",
     "declaration": true,
     "outDir": "dist/",
-    "newLine": "LF"
+    "newLine": "LF",
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "skipLibCheck": true
   },
-  "include": [
-    "src/"
-  ]
+  "include": ["lib/**/*", "src/**/*", "types/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
