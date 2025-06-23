@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "lib": [
-      "es2018",
+      "es2022",
       "webworker"
     ],
     "module": "commonjs",
@@ -10,10 +11,12 @@
     "removeComments": false,
     "sourceMap": true,
     "strict": true,
-    "target": "es2018",
+    "target": "es2022",
     "declaration": true,
     "outDir": "dist/",
-    "newLine": "LF"
+    "newLine": "LF",
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
   "include": [
     "src/"
