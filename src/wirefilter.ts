@@ -10,15 +10,15 @@
 // extern "C" {
 // #endif
 
-import ffi from 'ffi-napi';
+import ffi from '@2060.io/ffi-napi';
 import ref from 'ref-napi';
 import ref_struct_di from 'ref-struct-di';
 import ref_array_di from 'ref-array-di';
 import ref_union_di from 'ref-union-di';
 
-const Struct = ref_struct_di(ref);
+const Struct = ref_struct_di(ref as any);
 const Array = ref_array_di(ref as any) as any;
-const Union = ref_union_di(ref);
+const Union = ref_union_di(ref as any);
 
 const lib = {} as any;
 
