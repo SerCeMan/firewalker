@@ -4,7 +4,7 @@ orbs:
 jobs:
   validate:
     docker:
-      - image: cimg/node:18.6.0
+      - image: cimg/node:20.19.3
     steps:
       - run: node --version
       - run: yarn versions
